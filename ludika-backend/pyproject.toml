@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "ludika-backend"
+version = "0.1.0"
+description = ""
+authors = ["TheManchineel <37479927+TheManchineel@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.12"
+pydantic = "^2.11.3"
+sqlmodel = "^0.0.24"
+psycopg = "^3.2.6"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
