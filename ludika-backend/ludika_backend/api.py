@@ -8,9 +8,6 @@ from ludika_backend.util.config import get_config_value
 
 app = FastAPI()
 
-app.add_middleware(SessionMiddleware, secret_key=get_config_value("GoogleAuth", "secret_key"))
-
-
 @app.get("/")
 async def root():
     """

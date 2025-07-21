@@ -1,4 +1,3 @@
-# auth.py
 from fastapi import HTTPException, Cookie
 from authlib.integrations.starlette_client import OAuth
 from datetime import datetime, timedelta
