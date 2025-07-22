@@ -1,8 +1,10 @@
 from datetime import datetime
 from pydantic import SecretStr
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, Field
 from enum import Enum
 from uuid import UUID
+
+from ludika_backend.util.db import make_enum_field
 
 
 class UserRole(str, Enum):
@@ -21,7 +23,7 @@ class UserBase(SQLModel):
     """
 
     visible_name: str
-    user_role: UserRole
+    user_role: UserRole = make_enum_field(UserRole)
     enabled: bool
 
 
@@ -32,7 +34,7 @@ class User(UserBase, table=True):
 
     __tablename__ = "users"  # type: ignore[assignment]
 
-    uuid: UUID
+    uuid: UUID = Field(primary_key=True)
     email: str
     created_at: datetime
     last_login: datetime | None
@@ -47,7 +49,9 @@ class UserCreate(UserBase):
 
     enabled: bool = True
     email: str
-    user_role: UserRole = UserRole.USER
+    user_role: UserRole = make_enum_field(
+        UserRole, nullable=True, default=UserRole.USER
+    )
     password: SecretStr
 
 
@@ -59,7 +63,7 @@ class UserUpdate(UserBase):
     uuid: UUID
     visible_name: str | None
     email: str | None
-    user_role: UserRole | None
+    user_role: UserRole | None = make_enum_field(UserRole, nullable=True)
     enabled: bool | None
     password: SecretStr | None
 

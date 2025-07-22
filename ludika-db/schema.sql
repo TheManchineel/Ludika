@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS Game (
     icon TEXT DEFAULT NULL,
     proposing_user UUID REFERENCES Users(uuid) ON DELETE SET NULL,
     status game_status DEFAULT 'draft' NOT NULL,
-    approved_by UUID REFERENCES Users(uuid) ON DELETE SET NULL,
+    approved_by UUID REFERENCES Users(uuid) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS GameImage (
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS GameImage (
     position INTEGER NOT NULL CHECK (position >= 0),
     image TEXT NOT NULL,
     PRIMARY KEY (game_id, position)
-)
+);
 
 CREATE TABLE IF NOT EXISTS Tag (
     id SERIAL PRIMARY KEY,

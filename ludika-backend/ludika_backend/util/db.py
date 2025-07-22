@@ -1,4 +1,7 @@
-from sqlmodel import create_engine, Session
+from enum import Enum
+
+from sqlmodel import create_engine, Session, Column, Field
+from sqlalchemy.dialects.postgresql import ENUM as SqlEnum
 from sqlalchemy.engine import Engine
 
 from ..util.config import get_config_value
@@ -40,3 +43,16 @@ def get_session():
     """
     with Session(get_engine()) as session:
         yield session
+
+
+def make_enum_field(enum_class: type[Enum], nullable: bool = False, default=None):
+    return Field(
+        sa_column=Column(
+            SqlEnum(
+                enum_class,
+                values_callable=lambda enum: [member.value for member in enum],
+            ),
+            nullable=nullable,
+            default=default,
+        )
+    )

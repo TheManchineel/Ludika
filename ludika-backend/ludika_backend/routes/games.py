@@ -9,7 +9,10 @@ game_router = APIRouter()
 
 @game_router.get("/", response_model=list[GamePublic])
 async def get_games(
-    page: int = 0, limit: int = 50, db_session: Session = Depends(get_session), tag_id: int | None = None
+    page: int = 0,
+    limit: int = 50,
+    db_session: Session = Depends(get_session),
+    tag_id: int | None = None,
 ):
     """
     Retrieve a list of all games with pagination.
@@ -17,12 +20,17 @@ async def get_games(
     if tag_id is None:
         statement = select(Game).offset(page * limit).limit(limit)
     else:
-        statement = select(Game).join(GameTag).join(Tag).where(Tag.id == tag_id).offset(page * limit).limit(limit)
+        statement = (
+            select(Game)
+            .join(GameTag)
+            .join(Tag)
+            .where(Tag.id == tag_id)
+            .offset(page * limit)
+            .limit(limit)
+        )
 
     results = db_session.exec(statement)
     games = results.all()
-    if not games:
-        raise HTTPException(status_code=404, detail="No games found")
     return games
 
 

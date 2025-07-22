@@ -1,12 +1,13 @@
 import subprocess
 from fastapi import FastAPI
-from starlette.middleware.sessions import SessionMiddleware
 from datetime import datetime
 
+from ludika_backend.routes.auth import auth_router
 from ludika_backend.routes.games import game_router
-from ludika_backend.util.config import get_config_value
+from ludika_backend.routes.tags import tag_router
 
 app = FastAPI()
+
 
 @app.get("/")
 async def root():
@@ -20,12 +21,15 @@ async def root():
         "status": "up",
         "uptime": subprocess.check_output(["uptime"]).decode("utf-8").strip(),
         "server_time": datetime.now().isoformat(),
-        "python_version": subprocess.check_output(["python3", "--version"]).decode("utf-8").strip(),
-        "uvicorn_version": subprocess.check_output(["uvicorn", "--version"]).decode("utf-8").strip(),
+        "python_version": subprocess.check_output(["python3", "--version"])
+        .decode("utf-8")
+        .strip(),
+        "uvicorn_version": subprocess.check_output(["uvicorn", "--version"])
+        .decode("utf-8")
+        .strip(),
         "system": subprocess.check_output(["uname", "-a"]).decode("utf-8").strip(),
         "time_taken": f"{int((datetime.now() - start).microseconds / 1000)} ms",
     }
-
     return data
 
 
@@ -38,3 +42,6 @@ async def health_check():
 
 
 app.include_router(game_router, prefix="/games")
+app.include_router(tag_router, prefix="/tags")
+
+app.include_router(auth_router, prefix="/auth")

@@ -19,7 +19,6 @@ class GameBase(SQLModel):
     Represents a game in the system.
     """
 
-
     class Config:
         """Make the JSON array in the `images` field compatible with SQLAlchemy"""
 
