@@ -2,9 +2,15 @@ import subprocess
 from fastapi import FastAPI
 from datetime import datetime
 
+from fastapi.params import Security
+from fastapi.staticfiles import StaticFiles
+
+from ludika_backend.controllers.auth import get_current_user
+from ludika_backend.models.users import User, UserPublic
 from ludika_backend.routes.auth import auth_router
 from ludika_backend.routes.games import game_router
 from ludika_backend.routes.tags import tag_router
+from ludika_backend.routes.users import user_router
 
 app = FastAPI()
 
@@ -41,7 +47,18 @@ async def health_check():
     return {"status": "ok"}
 
 
+@app.get("/me", response_model=UserPublic)
+async def get_me(current_user: User = Security(get_current_user)):
+    """
+    Get info on the logged-in user.
+    """
+    return current_user
+
+
 app.include_router(game_router, prefix="/games")
 app.include_router(tag_router, prefix="/tags")
+app.include_router(user_router, prefix="/users")
 
 app.include_router(auth_router, prefix="/auth")
+
+app.mount("/static", StaticFiles(directory="./static"), name="static")

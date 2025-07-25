@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import SecretStr
 from sqlmodel import select, Session
 
 from ludika_backend.controllers.auth import (
@@ -11,25 +12,30 @@ from ludika_backend.controllers.auth import (
     create_access_token,
 )
 from ludika_backend.models.auth import AuthToken
-from ludika_backend.models.users import UserPublic, UserCreate, User
-from ludika_backend.util.db import get_session
+from ludika_backend.models.users import UserPublic, User, UserRole
+from ludika_backend.utils.db import get_session
 
 auth_router = APIRouter()
 
 
 @auth_router.post("/signup", response_model=UserPublic)
-def signup(user: UserCreate, session: Session = Depends(get_session)):
-    if session.exec(select(User).where(User.email == user.email)).first():
+def signup(
+    email: str,
+    visible_name: str,
+    password: SecretStr,
+    session: Session = Depends(get_session),
+):
+    if session.exec(select(User).where(User.email == email)).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    hashed_pw = hash_password(user.password.get_secret_value())
+    hashed_pw = hash_password(password.get_secret_value())
     db_user = User(
         uuid=uuid4(),
-        email=user.email,
-        visible_name=user.visible_name,
+        email=email,
+        visible_name=visible_name,
         created_at=datetime.now(timezone.utc),
         password_hash=hashed_pw,
-        user_role="user",
+        user_role=UserRole.USER.value,
         enabled=True,
     )
     session.add(db_user)

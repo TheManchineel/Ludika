@@ -1,7 +1,17 @@
 from datetime import datetime
-from sqlmodel import Column, SQLModel, Field, String, Relationship
-from sqlalchemy.dialects.postgresql import ARRAY
+from enum import Enum
+
+from sqlmodel import SQLModel, Field, Relationship
 from uuid import UUID
+
+from ludika_backend.utils.db import make_enum_field
+
+
+class GameStatus(str, Enum):
+    DRAFT = "draft"
+    SUBMITTED = "submitted"
+    APPROVED = "approved"
+    REJECTED = "rejected"
 
 
 class GameTag(SQLModel, table=True):
@@ -27,7 +37,6 @@ class GameBase(SQLModel):
     name: str
     description: str | None
     url: str
-    icon: str | None
 
 
 class Game(GameBase, table=True):
@@ -35,11 +44,25 @@ class Game(GameBase, table=True):
     tags: list["Tag"] = Relationship(back_populates="games", link_model=GameTag)
 
     proposing_user: UUID | None
-    approved: bool | None = Field(default=None)
+    status: GameStatus = make_enum_field(GameStatus)
     approved_by: UUID | None = Field(default=None)
     created_at: datetime = Field(default=None)
     updated_at: datetime = Field(default=None)
-    images: list[str] | None = Field(sa_column=Column(ARRAY(String)), default=None)
+    images: list["GameImage"] = Relationship(back_populates="game")
+
+    def is_visible_by(self, user) -> bool:
+        if user is None:
+            return self.status == GameStatus.APPROVED
+        if user.is_privileged():
+            return True
+        return self.proposing_user == user.uuid or self.status == GameStatus.APPROVED
+
+
+class GameImage(SQLModel, table=True):
+    game_id: int = Field(foreign_key="game.id", primary_key=True)
+    position: int = Field(primary_key=True)
+    image: str
+    game: Game = Relationship(back_populates="images")
 
 
 class GamePublic(GameBase):
@@ -51,7 +74,8 @@ class GamePublic(GameBase):
     created_at: datetime
     updated_at: datetime
     tags: list["Tag"] = []
-    images: list[str] | None
+    images: list[GameImage] | None
+    status: GameStatus
 
 
 class GameCreate(GameBase):
@@ -62,7 +86,7 @@ class GameCreate(GameBase):
     tags: list[int] | None = None
 
 
-class GameUpdate(GameBase):
+class GameUpdate(SQLModel):
     """
     Represents a game update request.
     """
@@ -70,15 +94,28 @@ class GameUpdate(GameBase):
     name: str | None = None
     description: str | None = None
     url: str | None = None
-    icon: str | None = None
     tags: list[int] | None = None
+    status: GameStatus | None = None
 
 
-class Tag(SQLModel, table=True):
+class TagBase(SQLModel):
+    name: str
+    icon: str | None
+
+
+class Tag(TagBase, table=True):
     """
     Represents a game tag
     """
 
     id: int = Field(primary_key=True)
-    name: str
     games: list["Game"] = Relationship(back_populates="tags", link_model=GameTag)
+
+
+class TagCreate(TagBase):
+    pass
+
+
+class TagUpdate(SQLModel):
+    name: str | None = None
+    icon: str | None = None

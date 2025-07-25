@@ -4,7 +4,7 @@ from sqlmodel import create_engine, Session, Column, Field
 from sqlalchemy.dialects.postgresql import ENUM as SqlEnum
 from sqlalchemy.engine import Engine
 
-from ..util.config import get_config_value
+from ..utils.config import get_config_value
 
 engine: Engine | None = None
 
