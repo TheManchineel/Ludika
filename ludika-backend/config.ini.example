@@ -1,0 +1,10 @@
+[Database]
+user=postgres
+dbname=ludika
+password=MY_POSTGRES_PASSWORD
+host=127.0.0.1
+port=5432
+
+[Authentication]
+secret_key=RANDOM_KEY_FOR_JWT_SIGNING
+access_token_expire_minutes=30
