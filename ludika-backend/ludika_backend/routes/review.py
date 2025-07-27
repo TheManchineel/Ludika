@@ -3,6 +3,7 @@ from fastapi.params import Security
 from sqlmodel import Session, delete, select, or_
 from typing import List
 from datetime import datetime
+from uuid import UUID
 
 from ludika_backend.controllers.auth import get_current_user, get_current_user_optional
 from ludika_backend.models.review import (
@@ -16,11 +17,14 @@ from ludika_backend.models.review import (
     CriterionWeightCreate,
     Review,
     ReviewUpdate,
+    ReviewCreate,
     ReviewRating,
+    ReviewRatingCreate,
     CriterionWeightProfilePublic,
     ReviewPublic,
 )
 from ludika_backend.models.users import User, UserRole
+from ludika_backend.models.games import Game, GameStatus
 from ludika_backend.utils.db import get_session
 
 review_router = APIRouter()
@@ -61,6 +65,41 @@ def _handle_profile_weights(
         db_session.add(db_weight)
 
     db_session.commit()
+
+
+def _check_game_access_and_approved(
+    db_session: Session,
+    game_id: int,
+    current_user: User | None = None,
+    require_approved: bool = True,
+) -> Game:
+    """
+    Helper function to check if a game exists, is accessible, and optionally is approved.
+    """
+    game_statement = select(Game).where(Game.id == game_id)
+    
+    if current_user:
+        if not current_user.is_privileged():
+            game_statement = game_statement.where(
+                or_(
+                    Game.proposing_user == current_user.uuid,
+                    Game.status == GameStatus.APPROVED.value,
+                )
+            )
+    else:
+        game_statement = game_statement.where(Game.status == GameStatus.APPROVED.value)
+
+    game = db_session.exec(game_statement).first()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    if require_approved and game.status != GameStatus.APPROVED:
+        raise HTTPException(
+            status_code=400, 
+            detail="Reviews can only be created for approved games."
+        )
+    
+    return game
 
 
 # --- ReviewCriterion Endpoints ---
@@ -155,11 +194,14 @@ async def create_profile(
         profile_data, update={"user_id": current_user.uuid}
     )
 
+    db_session.add(db_profile)
+    db_session.commit()  # Commit first to get the profile ID
+    db_session.refresh(db_profile)
+
     if weights:
         _handle_profile_weights(db_session, db_profile.id, weights, current_user)
 
-    db_session.add(db_profile)
-    db_session.commit()
+    # get the profile with the weights
     db_session.refresh(db_profile)
     return db_profile
 
@@ -219,90 +261,211 @@ async def delete_profile(
     return {"status": "ok"}
 
 
-@review_router.get("/{review_id}")
-async def get_review(
-    review_id: int,
+# --- Review Endpoints ---
+@review_router.get("/{game_id}")
+async def get_game_reviews(
+    game_id: int,
     db_session: Session = Depends(get_session),
     current_user: User | None = Security(get_current_user_optional),
-) -> ReviewPublic:
+) -> List[ReviewPublic]:
     """
-    Retrieve a specific review by its ID.
+    Get all reviews for a specific game.
     """
-    db_review = db_session.get(Review, review_id)
-    if not db_review:
-        raise HTTPException(status_code=404, detail="Review not found")
-
-    # Check if user can view this review (either it's their own or they're privileged)
-    if current_user and not current_user.is_privileged():
-        if db_review.reviewer_id != current_user.uuid:
-            raise HTTPException(
-                status_code=403,
-                detail="You do not have permission to view this review.",
-            )
-
-    return db_review
+    _check_game_access_and_approved(db_session, game_id, current_user, require_approved=False)
+    
+    reviews = db_session.exec(
+        select(Review).where(Review.game_id == game_id)
+    ).all()
+    
+    return reviews
 
 
-@review_router.patch("/{review_id}")
-async def update_review(
-    review_id: int,
-    update: ReviewUpdate,
+@review_router.get("/{game_id}/my-review")
+async def get_my_review(
+    game_id: int,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ) -> ReviewPublic:
     """
-    Update a specific review by its ID.
+    Get the current user's review for a specific game, if it exists.
     """
-    db_review = db_session.get(Review, review_id)
-    if not db_review:
-        raise HTTPException(status_code=404, detail="Review not found")
-
-    if db_review.reviewer_id != current_user.uuid and not current_user.is_privileged():
-        raise HTTPException(
-            status_code=403, detail="You do not have permission to update this review."
+    _check_game_access_and_approved(db_session, game_id, current_user, require_approved=False)
+    
+    review = db_session.exec(
+        select(Review).where(
+            Review.game_id == game_id,
+            Review.reviewer_id == current_user.uuid
         )
+    ).first()
+    
+    if not review:
+        raise HTTPException(status_code=404, detail="You have not reviewed this game yet.")
+    
+    return review
 
-    # Update review data
-    update_data = update.model_dump(exclude_unset=True, exclude={"ratings"})
-    if update_data:
-        db_review.sqlmodel_update(update_data)
-        db_review.updated_at = datetime.utcnow()
 
-    # Handle ratings update if provided (similar to criterion weights logic)
-    if update.ratings is not None:
+@review_router.put("/{game_id}/my-review")
+async def create_or_update_my_review(
+    game_id: int,
+    review: ReviewCreate,
+    db_session: Session = Depends(get_session),
+    current_user: User = Security(get_current_user),
+) -> ReviewPublic:
+    """
+    Create a new review or replace existing review for the current user.
+    Only allowed for approved games.
+    """
+    _check_game_access_and_approved(db_session, game_id, current_user, require_approved=True)
+    
+    # Check if review already exists
+    existing_review = db_session.exec(
+        select(Review).where(
+            Review.game_id == game_id,
+            Review.reviewer_id == current_user.uuid
+        )
+    ).first()
+    
+    if existing_review:
+        # Update existing review
+        update_data = review.model_dump(exclude={"ratings"})
+        existing_review.sqlmodel_update(update_data)
+        existing_review.updated_at = datetime.utcnow()
+        
         # Delete existing ratings
-        db_session.exec(delete(ReviewRating).where(ReviewRating.review_id == review_id))
-
-        # Add new ratings
-        for rating_data in update.ratings:
-            db_rating = ReviewRating.model_validate(
-                rating_data, update={"review_id": review_id}
+        db_session.exec(
+            delete(ReviewRating).where(
+                ReviewRating.game_id == game_id,
+                ReviewRating.reviewer_id == current_user.uuid
             )
-            db_session.add(db_rating)
+        )
+        
+        # Add new ratings
+        if review.ratings:
+            for rating_data in review.ratings:
+                db_rating = ReviewRating.model_validate(
+                    rating_data, 
+                    update={
+                        "game_id": game_id,
+                        "reviewer_id": current_user.uuid
+                    }
+                )
+                db_session.add(db_rating)
+        
+        db_session.commit()
+        db_session.refresh(existing_review)
+        return existing_review
+    else:
+        # Create new review
+        review_data = review.model_dump(exclude={"ratings"})
+        db_review = Review.model_validate(
+            review_data,
+            update={
+                "game_id": game_id,
+                "reviewer_id": current_user.uuid,
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+            },
+        )
+        db_session.add(db_review)
+        db_session.commit()
+        db_session.refresh(db_review)
+        
+        # Add ratings if provided
+        if review.ratings:
+            for rating_data in review.ratings:
+                db_rating = ReviewRating.model_validate(
+                    rating_data,
+                    update={
+                        "game_id": game_id,
+                        "reviewer_id": current_user.uuid
+                    }
+                )
+                db_session.add(db_rating)
+            db_session.commit()
+            db_session.refresh(db_review)
+        
+        return db_review
 
-    db_session.commit()
-    db_session.refresh(db_review)
-    return db_review
 
-
-@review_router.delete("/{review_id}")
-async def delete_review(
-    review_id: int,
+@review_router.delete("/{game_id}/my-review")
+async def delete_my_review(
+    game_id: int,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ):
     """
-    Delete a specific review by its ID.
+    Delete the current user's review for a specific game, if it exists.
     """
-    db_review = db_session.get(Review, review_id)
-    if not db_review:
-        raise HTTPException(status_code=404, detail="Review not found")
-
-    if db_review.reviewer_id != current_user.uuid and not current_user.is_privileged():
-        raise HTTPException(
-            status_code=403, detail="You do not have permission to delete this review."
+    _check_game_access_and_approved(db_session, game_id, current_user, require_approved=False)
+    
+    review = db_session.exec(
+        select(Review).where(
+            Review.game_id == game_id,
+            Review.reviewer_id == current_user.uuid
         )
+    ).first()
+    
+    if not review:
+        raise HTTPException(status_code=404, detail="You have not reviewed this game yet.")
+    
+    db_session.delete(review)
+    db_session.commit()
+    return {"status": "ok"}
 
-    db_session.delete(db_review)
+
+@review_router.get("/{game_id}/{user_id}")
+async def get_user_review(
+    game_id: int,
+    user_id: UUID,
+    db_session: Session = Depends(get_session),
+    current_user: User | None = Security(get_current_user_optional),
+) -> ReviewPublic:
+    """
+    Get a specific user's review for a specific game, if it exists.
+    """
+    _check_game_access_and_approved(db_session, game_id, current_user, require_approved=False)
+    
+    review = db_session.exec(
+        select(Review).where(
+            Review.game_id == game_id,
+            Review.reviewer_id == user_id
+        )
+    ).first()
+    
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found.")
+    
+    return review
+
+
+@review_router.delete("/{game_id}/{user_id}")
+async def delete_user_review(
+    game_id: int,
+    user_id: UUID,
+    db_session: Session = Depends(get_session),
+    current_user: User = Security(get_current_user),
+):
+    """
+    Delete a specific user's review for a specific game. Only privileged users can do this.
+    """
+    if not current_user.is_privileged():
+        raise HTTPException(
+            status_code=403, 
+            detail="Only privileged users can delete other users' reviews."
+        )
+    
+    _check_game_access_and_approved(db_session, game_id, current_user, require_approved=False)
+    
+    review = db_session.exec(
+        select(Review).where(
+            Review.game_id == game_id,
+            Review.reviewer_id == user_id
+        )
+    ).first()
+    
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found.")
+    
+    db_session.delete(review)
     db_session.commit()
     return {"status": "ok"}

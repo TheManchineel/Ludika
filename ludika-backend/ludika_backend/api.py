@@ -2,13 +2,9 @@ import subprocess
 from fastapi import FastAPI
 from datetime import datetime
 
-from fastapi.params import Security
 from fastapi.staticfiles import StaticFiles
 
-from ludika_backend.controllers.auth import get_current_user
-from ludika_backend.models.users import User, UserPublic
 # Import models module to trigger model rebuilding
-import ludika_backend.models
 from ludika_backend.routes.auth import auth_router
 from ludika_backend.routes.games import game_router
 from ludika_backend.routes.review import review_router
@@ -18,8 +14,9 @@ from ludika_backend.routes.users import user_router
 app = FastAPI()
 
 
+@app.get("/status")
 @app.get("/")
-async def root():
+async def status():
     """
     Root endpoint that returns status information.
     """
@@ -40,22 +37,6 @@ async def root():
         "time_taken": f"{int((datetime.now() - start).microseconds / 1000)} ms",
     }
     return data
-
-
-@app.get("/health")
-async def health_check():
-    """
-    Health check endpoint that returns a status message.
-    """
-    return {"status": "ok"}
-
-
-@app.get("/me")
-async def get_me(current_user: User = Security(get_current_user)) -> UserPublic:
-    """
-    Get info on the logged-in user.
-    """
-    return current_user
 
 
 app.include_router(game_router, prefix="/games")

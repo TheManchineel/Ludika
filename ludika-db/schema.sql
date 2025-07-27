@@ -69,21 +69,22 @@ CREATE TABLE IF NOT EXISTS ReviewCriterion (
 
 -- Review of a game by a user, with ratings for each criterion
 CREATE TABLE IF NOT EXISTS Review (
-    id SERIAL PRIMARY KEY,
     game_id INTEGER REFERENCES Game(id) ON DELETE CASCADE,
     reviewer_id UUID REFERENCES Users(uuid) ON DELETE CASCADE,
     review_text TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (game_id, reviewer_id)
+    PRIMARY KEY (game_id, reviewer_id)
 );
 
 -- Ratings for each criterion in a review
 CREATE TABLE IF NOT EXISTS ReviewRating (
-    review_id INTEGER REFERENCES Review(id) ON DELETE CASCADE,
+    game_id INTEGER REFERENCES Game(id) ON DELETE CASCADE,
+    reviewer_id UUID REFERENCES Users(uuid) ON DELETE CASCADE,
     criterion_id INTEGER REFERENCES ReviewCriterion(id) ON DELETE CASCADE,
-    score INTEGER CHECK (score >= 1 AND score <= 5),
-    PRIMARY KEY (review_id, criterion_id)
+    score INTEGER NOT NULL CHECK (score >= 1 AND score <= 5),
+    PRIMARY KEY (game_id, reviewer_id, criterion_id),
+    FOREIGN KEY (game_id, reviewer_id) REFERENCES Review(game_id, reviewer_id) ON DELETE CASCADE
 );
 
 -- Weight profile defined by a user (or admin if global), to be used for MCDA (Multi-Criteria Decision Analysis)

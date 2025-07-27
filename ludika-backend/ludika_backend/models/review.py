@@ -4,7 +4,8 @@ from uuid import UUID
 from typing import Optional, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ludika_backend.models.users import UserPublic
+    from ludika_backend.models.users import UserPublic, User
+    from ludika_backend.models.games import Game
 
 
 # --- Review Criterion ---
@@ -96,12 +97,20 @@ class ReviewRatingBase(SQLModel):
 
 
 class ReviewRating(ReviewRatingBase, table=True):
-    review_id: int = Field(
-        foreign_key="review.id", primary_key=True, ondelete="CASCADE"
+    game_id: int = Field(foreign_key="game.id", primary_key=True, ondelete="CASCADE")
+    reviewer_id: UUID = Field(
+        foreign_key="users.uuid", primary_key=True, ondelete="CASCADE"
     )
-    criterion_id: int = Field(foreign_key="reviewcriterion.id", primary_key=True)
+    criterion_id: int = Field(
+        foreign_key="reviewcriterion.id", primary_key=True, ondelete="CASCADE"
+    )
     score: int = Field(..., ge=1, le=5)
-    review: "Review" = Relationship(back_populates="ratings")
+    review: "Review" = Relationship(
+        back_populates="ratings",
+        sa_relationship_kwargs={
+            "primaryjoin": "and_(foreign(ReviewRating.game_id) == Review.game_id, foreign(ReviewRating.reviewer_id) == Review.reviewer_id)"
+        },
+    )
     criterion: "ReviewCriterion" = Relationship(back_populates="ratings")
 
 
@@ -114,7 +123,7 @@ class ReviewRatingUpdate(SQLModel):
 
 
 class ReviewRatingPublic(ReviewRatingBase):
-    criterion: ReviewCriterion = {}
+    criterion: "ReviewCriterion" = {}
 
 
 # --- Review Models ---
@@ -123,18 +132,26 @@ class ReviewBase(SQLModel):
 
 
 class Review(ReviewBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    game_id: int = Field(foreign_key="game.id", ondelete="CASCADE")
-    reviewer_id: UUID = Field(foreign_key="users.uuid")
+    game_id: int = Field(primary_key=True, foreign_key="game.id", ondelete="CASCADE")
+    reviewer_id: UUID = Field(
+        primary_key=True, foreign_key="users.uuid", ondelete="CASCADE"
+    )
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    ratings: list["ReviewRating"] = Relationship(back_populates="review")
+    ratings: list["ReviewRating"] = Relationship(
+        back_populates="review",
+        sa_relationship_kwargs={
+            "primaryjoin": "and_(Review.game_id == foreign(ReviewRating.game_id), Review.reviewer_id == foreign(ReviewRating.reviewer_id))"
+        },
+        cascade_delete=True,
+    )
     author: "User" = Relationship(back_populates="reviews")
     game: "Game" = Relationship(back_populates="reviews")
 
 
 class ReviewPublic(ReviewBase):
-    id: int
+    game_id: int
+    reviewer_id: UUID
     author: "UserPublic" = {}
     created_at: datetime
     updated_at: datetime
