@@ -1,11 +1,12 @@
 from datetime import datetime
 from pydantic import SecretStr
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
 from enum import Enum
 from uuid import UUID
 
-from ludika_backend.models.games import Game, GameStatus
 from ludika_backend.utils.db import make_enum_field
+
+from ludika_backend.models.games import Game, GameStatus
 
 
 class UserRole(str, Enum):
@@ -44,6 +45,7 @@ class User(UserBase, table=True):
     last_login: datetime | None
     enabled: bool
     password_hash: str | None
+    reviews: list["Review"] = Relationship(back_populates="author")
 
     def can_edit_game(self, game: Game):
         if self.user_role.is_privileged():
@@ -78,8 +80,10 @@ class UserPublic(UserBase):
 class UserUpdateVisibleName(SQLModel):
     visible_name: str
 
+
 class UserUpdatePassword(SQLModel):
     password: SecretStr
+
 
 class UserAdminUpdate(SQLModel):
     enabled: bool | None = None

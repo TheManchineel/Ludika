@@ -9,6 +9,7 @@ from ludika_backend.controllers.auth import get_current_user, get_current_user_o
 from ludika_backend.models.games import (
     Game,
     GamePublic,
+    GameWithReviews,
     GameCreate,
     Tag,
     GameUpdate,
@@ -16,6 +17,7 @@ from ludika_backend.models.games import (
     GameStatus,
 )
 from ludika_backend.models.users import User
+from ludika_backend.models.review import Review, ReviewCreate, ReviewRating
 from ludika_backend.utils.db import get_session
 from sqlmodel import Session, select, or_
 from ludika_backend.utils.image_ops import (
@@ -122,6 +124,139 @@ async def get_game(
     return game
 
 
+@game_router.get(
+    "/{game_id}/with-reviews",
+    response_model=GameWithReviews,
+)
+async def get_game_with_reviews(
+    game_id: int,
+    db_session: Session = Depends(get_session),
+    current_user: User | None = Security(get_current_user_optional),
+):
+    """
+    Retrieve a game by its ID with reviews included.
+    """
+    statement = select(Game).where(Game.id == game_id)
+    if current_user:
+        if not current_user.is_privileged:
+            statement = statement.where(
+                or_(
+                    Game.proposing_user == current_user.uuid,
+                    Game.status == GameStatus.APPROVED.value,
+                )
+            )
+    else:
+        statement = statement.where(Game.status == GameStatus.APPROVED.value)
+    results = db_session.exec(statement)
+    game = results.first()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    return game
+
+
+@game_router.get(
+    "/{game_id}/reviews",
+    response_model=list[Review],
+)
+async def get_game_reviews(
+    game_id: int,
+    db_session: Session = Depends(get_session),
+    current_user: User | None = Security(get_current_user_optional),
+):
+    """
+    Retrieve all reviews for a specific game.
+    """
+    # First check if the game exists and is accessible
+    game_statement = select(Game).where(Game.id == game_id)
+    if current_user:
+        if not current_user.is_privileged():
+            game_statement = game_statement.where(
+                or_(
+                    Game.proposing_user == current_user.uuid,
+                    Game.status == GameStatus.APPROVED.value,
+                )
+            )
+    else:
+        game_statement = game_statement.where(Game.status == GameStatus.APPROVED.value)
+
+    game = db_session.exec(game_statement).first()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    # Get reviews for the game
+    reviews_statement = select(Review).where(Review.game_id == game_id)
+    reviews = db_session.exec(reviews_statement).all()
+    return reviews
+
+
+@game_router.post(
+    "/{game_id}/reviews",
+    response_model=Review,
+)
+async def create_game_review(
+    game_id: int,
+    review: ReviewCreate,
+    db_session: Session = Depends(get_session),
+    current_user: User = Security(get_current_user),
+):
+    """
+    Create a new review for a specific game.
+    """
+    # First check if the game exists and is accessible
+    game_statement = select(Game).where(Game.id == game_id)
+    if not current_user.is_privileged():
+        game_statement = game_statement.where(
+            or_(
+                Game.proposing_user == current_user.uuid,
+                Game.status == GameStatus.APPROVED.value,
+            )
+        )
+
+    game = db_session.exec(game_statement).first()
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    # Check if user already has a review for this game
+    existing_review = db_session.exec(
+        select(Review).where(
+            Review.game_id == game_id, Review.reviewer_id == current_user.uuid
+        )
+    ).first()
+
+    if existing_review:
+        raise HTTPException(
+            status_code=400,
+            detail="You have already reviewed this game. Use PATCH to update your review.",
+        )
+
+    # Create the review
+    review_data = review.model_dump(exclude={"ratings"})
+    db_review = Review.model_validate(
+        review_data,
+        update={
+            "game_id": game_id,
+            "reviewer_id": current_user.uuid,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+        },
+    )
+    db_session.add(db_review)
+    db_session.commit()
+    db_session.refresh(db_review)
+
+    # Add ratings if provided
+    if review.ratings:
+        for rating_data in review.ratings:
+            db_rating = ReviewRating.model_validate(
+                rating_data, update={"review_id": db_review.id}
+            )
+            db_session.add(db_rating)
+        db_session.commit()
+        db_session.refresh(db_review)
+
+    return db_review
+
+
 @game_router.post("/", response_model=GamePublic)
 async def create_game(
     game: GameCreate,
@@ -222,7 +357,9 @@ async def get_game_image(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
     if not game.is_visible_by(current_user):
-        raise HTTPException(status_code=403, detail="You do not have permission to view this game.")
+        raise HTTPException(
+            status_code=403, detail="You do not have permission to view this game."
+        )
     image_record = db_session.exec(
         select(GameImage).where(
             GameImage.game_id == game_id, GameImage.position == image_no

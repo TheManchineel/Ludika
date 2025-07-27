@@ -49,6 +49,7 @@ class Game(GameBase, table=True):
     created_at: datetime = Field(default=None)
     updated_at: datetime = Field(default=None)
     images: list["GameImage"] = Relationship(back_populates="game")
+    reviews: list["Review"] = Relationship(back_populates="game")
 
     def is_visible_by(self, user) -> bool:
         if user is None:
@@ -76,6 +77,14 @@ class GamePublic(GameBase):
     tags: list["Tag"] = []
     images: list[GameImage] | None
     status: GameStatus
+
+
+class GameWithReviews(GamePublic):
+    """
+    Represents a game with public fields and reviews.
+    """
+
+    reviews: list["ReviewPublic"] = []
 
 
 class GameCreate(GameBase):
@@ -119,3 +128,10 @@ class TagCreate(TagBase):
 class TagUpdate(SQLModel):
     name: str | None = None
     icon: str | None = None
+
+
+from ludika_backend.models.review import Review, ReviewPublic
+
+Game.model_rebuild()
+GamePublic.model_rebuild()
+GameWithReviews.model_rebuild()
