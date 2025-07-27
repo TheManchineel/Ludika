@@ -11,7 +11,11 @@ from ludika_backend.routes.review import review_router
 from ludika_backend.routes.tags import tag_router
 from ludika_backend.routes.users import user_router
 
-app = FastAPI()
+app = FastAPI(
+    title="Ludika API",
+    description="API for the Ludika platform",
+    version="0.1.0",
+)
 
 
 @app.get("/status")

@@ -25,6 +25,7 @@ def signup(
     password: SecretStr,
     session: Session = Depends(get_session),
 ) -> UserPublic:
+    """Register a new user account."""
     if session.exec(select(User).where(User.email == email)).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -49,6 +50,7 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: Session = Depends(get_session),
 ) -> AuthToken:
+    """Authenticate a user and return an access token."""
     user = session.exec(select(User).where(User.email == form_data.username)).first()
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")

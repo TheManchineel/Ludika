@@ -27,6 +27,7 @@ async def add_tag(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ):
+    """Create a new tag (admin only)."""
     if current_user.user_role != UserRole.PLATFORM_ADMINISTRATOR:
         raise HTTPException(
             status_code=403, detail="You do not have permission to create tags."
@@ -50,6 +51,7 @@ async def delete_tag(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ):
+    """Delete a tag (admin only)."""
     tag = db_session.get(Tag, tag_id)
     if not tag:
         raise HTTPException(status_code=404, detail="Tag not found")
@@ -69,6 +71,7 @@ async def update_tag(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ):
+    """Update a tag (admin only)."""
     db_tag = db_session.get(Tag, tag_id)
     if not db_tag:
         raise HTTPException(status_code=404, detail="Tag not found")

@@ -107,6 +107,7 @@ def _check_game_access_and_approved(
 async def list_criteria(
     db_session: Session = Depends(get_session),
 ) -> List[ReviewCriterion]:
+    """Get all review criteria."""
     return db_session.exec(select(ReviewCriterion)).all()
 
 
@@ -116,6 +117,7 @@ async def create_criterion(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ) -> ReviewCriterion:
+    """Create a new review criterion (admin only)."""
     if current_user.user_role != UserRole.PLATFORM_ADMINISTRATOR:
         raise HTTPException(status_code=403, detail="Only admins can create criteria.")
     db_criterion = ReviewCriterion.model_validate(criterion)
@@ -132,6 +134,7 @@ async def update_criterion(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ) -> ReviewCriterion:
+    """Update a review criterion (admin only)."""
     if current_user.user_role != UserRole.PLATFORM_ADMINISTRATOR:
         raise HTTPException(status_code=403, detail="Only admins can update criteria.")
     db_criterion = db_session.get(ReviewCriterion, criterion_id)
@@ -149,6 +152,7 @@ async def delete_criterion(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ):
+    """Delete a review criterion (admin only)."""
     if current_user.user_role != UserRole.PLATFORM_ADMINISTRATOR:
         raise HTTPException(status_code=403, detail="Only admins can delete criteria.")
     db_criterion = db_session.get(ReviewCriterion, criterion_id)
@@ -165,6 +169,7 @@ async def list_profiles(
     db_session: Session = Depends(get_session),
     current_user: User | None = Security(get_current_user_optional),
 ) -> List[CriterionWeightProfilePublic]:
+    """Get available criterion weight profiles."""
     if current_user is None:
         condition = CriterionWeightProfile.is_global == True
     else:
@@ -182,6 +187,7 @@ async def create_profile(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ) -> CriterionWeightProfilePublic:
+    """Create a new criterion weight profile."""
     if profile.is_global and current_user.user_role != UserRole.PLATFORM_ADMINISTRATOR:
         raise HTTPException(
             status_code=403, detail="Only admins can create global profiles."
@@ -213,6 +219,7 @@ async def update_profile(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ) -> CriterionWeightProfilePublic:
+    """Update a criterion weight profile."""
     db_profile = db_session.get(CriterionWeightProfile, profile_id)
     if not db_profile:
         raise HTTPException(status_code=404, detail="Profile not found")
@@ -244,6 +251,7 @@ async def delete_profile(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ):
+    """Delete a criterion weight profile."""
     db_profile = db_session.get(CriterionWeightProfile, profile_id)
     if not db_profile:
         raise HTTPException(status_code=404, detail="Profile not found")

@@ -60,6 +60,7 @@ async def get_my_games(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ) -> list[GamePublic]:
+    """Get games created by the current user."""
     statement = (
         select(Game)
         .where(Game.proposing_user == current_user.uuid)
@@ -78,6 +79,7 @@ async def get_games_waiting_for_approval(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ) -> list[GamePublic]:
+    """Get games waiting for approval (privileged users only)."""
     if not current_user.is_privileged():
         raise HTTPException(
             status_code=403, detail="You do not have permission to view this."
@@ -183,6 +185,7 @@ async def delete_game(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ):
+    """Delete a game (only by creator or privileged users)."""
     game = db_session.get(Game, game_id)
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -204,6 +207,7 @@ async def update_game(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ) -> GamePublic:
+    """Update a game (only by creator or privileged users)."""
     db_game = db_session.get(Game, game_id)
     if not db_game:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -247,6 +251,7 @@ async def get_game_image(
     db_session: Session = Depends(get_session),
     current_user: User | None = Security(get_current_user_optional),
 ):
+    """Get a specific image for a game."""
     game = db_session.get(Game, game_id)
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -274,6 +279,7 @@ async def post_game_image(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ):
+    """Upload a new image for a game."""
     game = db_session.get(Game, game_id)
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -293,6 +299,7 @@ async def replace_game_image(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ):
+    """Replace an existing image for a game."""
     game = db_session.get(Game, game_id)
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -313,6 +320,7 @@ async def delete_game_image(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ):
+    """Delete a specific image from a game."""
     game = db_session.get(Game, game_id)
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")

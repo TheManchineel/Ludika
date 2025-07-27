@@ -22,6 +22,7 @@ async def list_users(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ) -> list[UserPublic]:
+    """Get all users (privileged users only)."""
     if not current_user.is_privileged():
         raise HTTPException(
             status_code=403, detail="You do not have permission to view users."
@@ -36,6 +37,7 @@ async def update_visible_name(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ) -> UserPublic:
+    """Update the current user's visible name."""
     current_user.visible_name = update.visible_name
     db_session.add(current_user)
     db_session.commit()
@@ -49,6 +51,7 @@ async def update_password(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ) -> UserPublic:
+    """Update the current user's password."""
     current_user.password_hash = hash_password(update.password.get_secret_value())
     db_session.add(current_user)
     db_session.commit()
@@ -62,6 +65,7 @@ async def get_user(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ) -> UserPublic:
+    """Get a specific user by ID (privileged users only)."""
     if not current_user.is_privileged():
         raise HTTPException(
             status_code=403, detail="You do not have permission to view users."
@@ -79,6 +83,7 @@ async def admin_update_user(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ) -> UserPublic:
+    """Update a user (privileged users only)."""
     if not current_user.is_privileged():
         raise HTTPException(
             status_code=403, detail="You do not have permission to update users."
@@ -106,6 +111,7 @@ async def delete_user(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ):
+    """Delete a user (admin only)."""
     if current_user.user_role != UserRole.PLATFORM_ADMINISTRATOR:
         raise HTTPException(status_code=403, detail="Only admins can delete users.")
     user = db_session.get(User, user_id)
