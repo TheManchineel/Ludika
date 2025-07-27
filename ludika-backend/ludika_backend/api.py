@@ -7,6 +7,8 @@ from fastapi.staticfiles import StaticFiles
 
 from ludika_backend.controllers.auth import get_current_user
 from ludika_backend.models.users import User, UserPublic
+# Import models module to trigger model rebuilding
+import ludika_backend.models
 from ludika_backend.routes.auth import auth_router
 from ludika_backend.routes.games import game_router
 from ludika_backend.routes.review import review_router
@@ -48,8 +50,8 @@ async def health_check():
     return {"status": "ok"}
 
 
-@app.get("/me", response_model=UserPublic)
-async def get_me(current_user: User = Security(get_current_user)):
+@app.get("/me")
+async def get_me(current_user: User = Security(get_current_user)) -> UserPublic:
     """
     Get info on the logged-in user.
     """

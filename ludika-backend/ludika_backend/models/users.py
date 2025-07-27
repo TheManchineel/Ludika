@@ -3,10 +3,12 @@ from pydantic import SecretStr
 from sqlmodel import SQLModel, Field, Relationship
 from enum import Enum
 from uuid import UUID
+from typing import TYPE_CHECKING
 
 from ludika_backend.utils.db import make_enum_field
 
-from ludika_backend.models.games import Game, GameStatus
+if TYPE_CHECKING:
+    from ludika_backend.models.games import Game, GameStatus
 
 
 class UserRole(str, Enum):
@@ -47,17 +49,17 @@ class User(UserBase, table=True):
     password_hash: str | None
     reviews: list["Review"] = Relationship(back_populates="author")
 
-    def can_edit_game(self, game: Game):
+    def can_edit_game(self, game: "Game"):
         if self.user_role.is_privileged():
             return True
-        if game.proposing_user == self.uuid and game.status == GameStatus.DRAFT.value:
+        if game.proposing_user == self.uuid and game.status == "draft":
             return True
         return False
 
-    def can_access_game(self, game: Game):
+    def can_access_game(self, game: "Game"):
         if self.user_role.is_privileged():
             return True
-        if game.status == GameStatus.APPROVED.value:
+        if game.status == "approved":
             return True
         if game.proposing_user == self.uuid:
             return True

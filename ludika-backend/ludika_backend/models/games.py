@@ -3,8 +3,12 @@ from enum import Enum
 
 from sqlmodel import SQLModel, Field, Relationship
 from uuid import UUID
+from typing import TYPE_CHECKING
 
 from ludika_backend.utils.db import make_enum_field
+
+if TYPE_CHECKING:
+    from ludika_backend.models.review import Review, ReviewPublic
 
 
 class GameStatus(str, Enum):
@@ -130,8 +134,4 @@ class TagUpdate(SQLModel):
     icon: str | None = None
 
 
-from ludika_backend.models.review import Review, ReviewPublic
 
-Game.model_rebuild()
-GamePublic.model_rebuild()
-GameWithReviews.model_rebuild()

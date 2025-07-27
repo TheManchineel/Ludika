@@ -1,8 +1,10 @@
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship
 from uuid import UUID
-from typing import Optional, List
-from ludika_backend.models.users import UserPublic
+from typing import Optional, List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ludika_backend.models.users import UserPublic
 
 
 # --- Review Criterion ---

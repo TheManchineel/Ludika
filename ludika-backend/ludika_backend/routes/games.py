@@ -17,7 +17,12 @@ from ludika_backend.models.games import (
     GameStatus,
 )
 from ludika_backend.models.users import User
-from ludika_backend.models.review import Review, ReviewCreate, ReviewRating
+from ludika_backend.models.review import (
+    Review,
+    ReviewCreate,
+    ReviewRating,
+    ReviewPublic,
+)
 from ludika_backend.utils.db import get_session
 from sqlmodel import Session, select, or_
 from ludika_backend.utils.image_ops import (
@@ -32,12 +37,12 @@ game_router = APIRouter()
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "static")
 
 
-@game_router.get("/", response_model=list[GamePublic])
+@game_router.get("/")
 async def get_games(
     page: int = 0,
     limit: int = 50,
     db_session: Session = Depends(get_session),
-):
+) -> list[GamePublic]:
     """
     Retrieve a list of all approved games with pagination.
     """
@@ -53,13 +58,13 @@ async def get_games(
     return games
 
 
-@game_router.get("/my-games", response_model=list[GamePublic])
+@game_router.get("/my-games")
 async def get_my_games(
     page: int = 0,
     limit: int = 50,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
-):
+) -> list[GamePublic]:
     statement = (
         select(Game)
         .where(Game.proposing_user == current_user.uuid)
@@ -71,13 +76,13 @@ async def get_my_games(
     return games
 
 
-@game_router.get("/waiting-for-approval", response_model=list[GamePublic])
+@game_router.get("/waiting-for-approval")
 async def get_games_waiting_for_approval(
     page: int = 0,
     limit: int = 50,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
-):
+) -> list[GamePublic]:
     if not current_user.is_privileged():
         raise HTTPException(
             status_code=403, detail="You do not have permission to view this."
@@ -94,15 +99,12 @@ async def get_games_waiting_for_approval(
     return games
 
 
-@game_router.get(
-    "/{game_id}",
-    response_model=GamePublic,
-)
+@game_router.get("/{game_id}")
 async def get_game(
     game_id: int,
     db_session: Session = Depends(get_session),
     current_user: User | None = Security(get_current_user_optional),
-):
+) -> GamePublic:
     """
     Retrieve a game by its ID.
     """
@@ -124,15 +126,12 @@ async def get_game(
     return game
 
 
-@game_router.get(
-    "/{game_id}/with-reviews",
-    response_model=GameWithReviews,
-)
+@game_router.get("/{game_id}/with-reviews")
 async def get_game_with_reviews(
     game_id: int,
     db_session: Session = Depends(get_session),
     current_user: User | None = Security(get_current_user_optional),
-):
+) -> GameWithReviews:
     """
     Retrieve a game by its ID with reviews included.
     """
@@ -154,15 +153,12 @@ async def get_game_with_reviews(
     return game
 
 
-@game_router.get(
-    "/{game_id}/reviews",
-    response_model=list[Review],
-)
+@game_router.get("/{game_id}/reviews")
 async def get_game_reviews(
     game_id: int,
     db_session: Session = Depends(get_session),
     current_user: User | None = Security(get_current_user_optional),
-):
+) -> list[ReviewPublic]:
     """
     Retrieve all reviews for a specific game.
     """
@@ -183,22 +179,18 @@ async def get_game_reviews(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    # Get reviews for the game
     reviews_statement = select(Review).where(Review.game_id == game_id)
     reviews = db_session.exec(reviews_statement).all()
     return reviews
 
 
-@game_router.post(
-    "/{game_id}/reviews",
-    response_model=Review,
-)
+@game_router.post("/{game_id}/reviews")
 async def create_game_review(
     game_id: int,
     review: ReviewCreate,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
-):
+) -> ReviewPublic:
     """
     Create a new review for a specific game.
     """
@@ -257,12 +249,12 @@ async def create_game_review(
     return db_review
 
 
-@game_router.post("/", response_model=GamePublic)
+@game_router.post("/")
 async def create_game(
     game: GameCreate,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
-):
+) -> GamePublic:
     """
     Create a new game.
     """
@@ -303,13 +295,13 @@ async def delete_game(
         )
 
 
-@game_router.patch("/{game_id}", response_model=GamePublic)
+@game_router.patch("/{game_id}")
 async def update_game(
     game_id: int,
     game_update: GameUpdate,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
-):
+) -> GamePublic:
     db_game = db_session.get(Game, game_id)
     if not db_game:
         raise HTTPException(status_code=404, detail="Game not found")

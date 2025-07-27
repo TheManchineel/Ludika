@@ -16,47 +16,47 @@ from ludika_backend.utils.db import get_session
 
 user_router = APIRouter()
 
-@user_router.get("/", response_model=list[UserPublic])
+@user_router.get("/")
 async def list_users(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
-):
+) -> list[UserPublic]:
     if not current_user.is_privileged():
         raise HTTPException(status_code=403, detail="You do not have permission to view users.")
     users = db_session.exec(select(User)).all()
     return users
 
-@user_router.patch("/me/visible-name", response_model=UserPublic)
+@user_router.patch("/me/visible-name")
 async def update_visible_name(
     update: UserUpdateVisibleName,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
-):
+) -> UserPublic:
     current_user.visible_name = update.visible_name
     db_session.add(current_user)
     db_session.commit()
     db_session.refresh(current_user)
     return current_user
 
-@user_router.patch("/me/password", response_model=UserPublic)
+@user_router.patch("/me/password")
 async def update_password(
     update: UserUpdatePassword,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
-):
+) -> UserPublic:
     current_user.password_hash = hash_password(update.password.get_secret_value())
     db_session.add(current_user)
     db_session.commit()
     db_session.refresh(current_user)
     return current_user
 
-@user_router.patch("/{user_id}/admin", response_model=UserPublic)
+@user_router.patch("/{user_id}/admin")
 async def admin_update_user(
     user_id: UUID,
     update: UserAdminUpdate,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
-):
+) -> UserPublic:
     if not current_user.is_privileged():
         raise HTTPException(status_code=403, detail="You do not have permission to update users.")
     user = db_session.get(User, user_id)

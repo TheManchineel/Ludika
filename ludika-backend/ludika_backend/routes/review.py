@@ -18,6 +18,7 @@ from ludika_backend.models.review import (
     ReviewUpdate,
     ReviewRating,
     CriterionWeightProfilePublic,
+    ReviewPublic,
 )
 from ludika_backend.models.users import User, UserRole
 from ludika_backend.utils.db import get_session
@@ -63,17 +64,19 @@ def _handle_profile_weights(
 
 
 # --- ReviewCriterion Endpoints ---
-@review_router.get("/criteria", response_model=List[ReviewCriterion])
-async def list_criteria(db_session: Session = Depends(get_session)):
+@review_router.get("/criteria")
+async def list_criteria(
+    db_session: Session = Depends(get_session),
+) -> List[ReviewCriterion]:
     return db_session.exec(select(ReviewCriterion)).all()
 
 
-@review_router.post("/criteria", response_model=ReviewCriterion)
+@review_router.post("/criteria")
 async def create_criterion(
     criterion: ReviewCriterionCreate,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
-):
+) -> ReviewCriterion:
     if current_user.user_role != UserRole.PLATFORM_ADMINISTRATOR:
         raise HTTPException(status_code=403, detail="Only admins can create criteria.")
     db_criterion = ReviewCriterion.model_validate(criterion)
@@ -83,13 +86,13 @@ async def create_criterion(
     return db_criterion
 
 
-@review_router.patch("/criteria/{criterion_id}", response_model=ReviewCriterion)
+@review_router.patch("/criteria/{criterion_id}")
 async def update_criterion(
     criterion_id: int,
     update: ReviewCriterionUpdate,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
-):
+) -> ReviewCriterion:
     if current_user.user_role != UserRole.PLATFORM_ADMINISTRATOR:
         raise HTTPException(status_code=403, detail="Only admins can update criteria.")
     db_criterion = db_session.get(ReviewCriterion, criterion_id)
@@ -118,11 +121,11 @@ async def delete_criterion(
 
 
 # --- CriterionWeightProfile Endpoints ---
-@review_router.get("/profiles", response_model=List[CriterionWeightProfilePublic])
+@review_router.get("/profiles")
 async def list_profiles(
     db_session: Session = Depends(get_session),
     current_user: User | None = Security(get_current_user_optional),
-):
+) -> List[CriterionWeightProfilePublic]:
     if current_user is None:
         condition = CriterionWeightProfile.is_global == True
     else:
@@ -134,12 +137,12 @@ async def list_profiles(
     return db_session.exec(select(CriterionWeightProfile).where(condition)).all()
 
 
-@review_router.post("/profiles", response_model=CriterionWeightProfilePublic)
+@review_router.post("/profiles")
 async def create_profile(
     profile: CriterionWeightProfileCreate,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
-):
+) -> CriterionWeightProfilePublic:
     if profile.is_global and current_user.user_role != UserRole.PLATFORM_ADMINISTRATOR:
         raise HTTPException(
             status_code=403, detail="Only admins can create global profiles."
@@ -161,15 +164,13 @@ async def create_profile(
     return db_profile
 
 
-@review_router.patch(
-    "/profiles/{profile_id}", response_model=CriterionWeightProfilePublic
-)
+@review_router.patch("/profiles/{profile_id}")
 async def update_profile(
     profile_id: int,
     update: CriterionWeightProfileUpdate,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
-):
+) -> CriterionWeightProfilePublic:
     db_profile = db_session.get(CriterionWeightProfile, profile_id)
     if not db_profile:
         raise HTTPException(status_code=404, detail="Profile not found")
@@ -218,12 +219,12 @@ async def delete_profile(
     return {"status": "ok"}
 
 
-@review_router.get("/{review_id}", response_model=Review)
+@review_router.get("/{review_id}")
 async def get_review(
     review_id: int,
     db_session: Session = Depends(get_session),
     current_user: User | None = Security(get_current_user_optional),
-):
+) -> ReviewPublic:
     """
     Retrieve a specific review by its ID.
     """
@@ -242,13 +243,13 @@ async def get_review(
     return db_review
 
 
-@review_router.patch("/{review_id}", response_model=Review)
+@review_router.patch("/{review_id}")
 async def update_review(
     review_id: int,
     update: ReviewUpdate,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
-):
+) -> ReviewPublic:
     """
     Update a specific review by its ID.
     """

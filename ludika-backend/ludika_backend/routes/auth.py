@@ -18,13 +18,13 @@ from ludika_backend.utils.db import get_session
 auth_router = APIRouter()
 
 
-@auth_router.post("/signup", response_model=UserPublic)
+@auth_router.post("/signup")
 def signup(
     email: str,
     visible_name: str,
     password: SecretStr,
     session: Session = Depends(get_session),
-):
+) -> UserPublic:
     if session.exec(select(User).where(User.email == email)).first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -44,11 +44,11 @@ def signup(
     return db_user
 
 
-@auth_router.post("/login", response_model=AuthToken)
+@auth_router.post("/login")
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: Session = Depends(get_session),
-):
+) -> AuthToken:
     user = session.exec(select(User).where(User.email == form_data.username)).first()
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
