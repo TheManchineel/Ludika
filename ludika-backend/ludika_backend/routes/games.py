@@ -36,17 +36,29 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "sta
 async def get_games(
     page: int = 0,
     limit: int = 50,
+    search: str | None = None,
+    tags: str | None = None,
     db_session: Session = Depends(get_session),
 ) -> list[GamePublic]:
-    """
-    Retrieve a list of all approved games with pagination.
-    """
+    """Retrieve a list of all approved games with pagination, tag filtering and search."""
+
     statement = (
         select(Game)
-        .where(or_(Game.status == GameStatus.APPROVED.value))
-        .offset(page * limit)
-        .limit(limit)
-    )
+        .where(or_(Game.status == GameStatus.APPROVED.value)))
+
+    if tags:
+        try:
+            tag_ids = [int(tag.strip()) for tag in tags.split(",")]
+            statement = statement.where(Game.tags.any(Tag.id.in_(tag_ids)))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid tags format (must be a comma-separated list of integers)")
+
+
+    if search:
+        statement = statement.where(or_(Game.name.ilike(f"%{search}%"), Game.description.ilike(f"%{search}%"), Game.tags.any(Tag.name.ilike(f"%{search}%"))))
+
+    statement = statement.offset(page * limit).limit(limit)
+
 
     results = db_session.exec(statement)
     games = results.all()
@@ -102,9 +114,7 @@ async def get_game(
     db_session: Session = Depends(get_session),
     current_user: User | None = Security(get_current_user_optional),
 ) -> GamePublic:
-    """
-    Retrieve a game by its ID.
-    """
+    """Retrieve a game by its ID."""
     statement = select(Game).where(Game.id == game_id)
     if current_user:
         if not current_user.is_privileged:
@@ -129,9 +139,7 @@ async def get_game_with_reviews(
     db_session: Session = Depends(get_session),
     current_user: User | None = Security(get_current_user_optional),
 ) -> GameWithReviews:
-    """
-    Retrieve a game by its ID with reviews included.
-    """
+    """Retrieve a game by its ID with reviews included."""
     statement = select(Game).where(Game.id == game_id)
     if current_user:
         if not current_user.is_privileged:
@@ -159,9 +167,7 @@ async def create_game(
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ) -> GamePublic:
-    """
-    Create a new game.
-    """
+    """Create a new game."""
     tags = db_session.exec(select(Tag).where(Tag.id.in_(game.tags))).all()
     db_game = Game.model_validate(
         game,

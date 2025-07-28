@@ -29,10 +29,13 @@
 \usepackage{float}
 \usepackage{fontawesome5}
 \usepackage{listings}
+\usepackage[usenames,dvipsnames]{xcolor}
 
+% ------ DRAFT WATERMARK ------
 \SetWatermarkText{DRAFT}
 \SetWatermarkScale{1}
 \SetWatermarkLightness{0.9}
+% -----------------------------
 
 \hypersetup{
     colorlinks,
@@ -44,6 +47,17 @@
 \definecolor{violettissimo}{RGB}{159, 116, 183}
 \definecolor{violettinissimo}{RGB}{207, 185, 219}
 \definecolor{verde}{RGB}{102, 153, 0}
+\definecolor{mio-rosso}{RGB}{159, 116, 183}
+
+\lstset{
+    basicstyle=\small\ttfamily,
+    keywordstyle=\color{cyan},
+    stringstyle=\color{verde},
+    commentstyle=\color{gray},
+    numberstyle=\color{violettissimo},
+    showstringspaces=false,
+    numbers=left,
+}
 
 \renewcommand{\familydefault}{\sfdefault}
 
@@ -166,10 +180,9 @@ In this section, I will provide an in-depth overview of the development process,
 \subsection{Functionality}
 
 The platform implements a set of core functionalities that allow \textbf{\textit{Users}} to:
-
 \begin{itemize}
-    \item \textbf{browse and search} for educational games, either by using a search bar or by filtering through a set of predefined categories;
-    \item \textbf{compare} educational games based on a set of criteria, including user reviews, ratings, and other relevant metrics;
+    \item \textbf{browse and search} for educational games, either by using a search bar or by filtering through a set of predefined tags;
+    \item \textbf{compare} educational games based on a set of criteria, including user reviews and ratings;
     \item \textbf{evaluate} educational games using a set of custom criteria defined by the user, allowing for a more personalized and relevant experience;
     \item \textbf{submit} new educational games to the platform as suggestions, allowing moderators to review and approve them;
     \item \textbf{review} educational games, providing feedback and ratings to help other users make informed decisions;
@@ -180,7 +193,7 @@ The platform implements a set of core functionalities that allow \textbf{\textit
 \begin{itemize}
     \item \textbf{add} new educational games to the platform, either by using a web form or by using the agentic web scraping feature;
     \item \textbf{approve} or reject user-submitted educational games, ensuring that only high-quality and relevant content is available on the platform;
-    \item \textbf{manage} user contents and accounts, including the ability to ban or suspend users who violate the platform's terms of service;
+    \item \textbf{manage} user contents and accounts, including the ability to suspend users who violate the platform's terms of service;
     \item \textbf{monitor} user activity and engagement, providing insights into how users are interacting with the platform and which games are most popular.
 \end{itemize}
 
@@ -258,7 +271,7 @@ Development of the project was carried out in a linear fashion, with a set of mi
 The API was developed first, using PostgreSQL, FastAPI and SQLModel to define the data models and the API endpoints. The goal was to have a solid foundation for the backend, and to be able to test the API using the interactive OpenAPI documentation. Authentication and authorization were implemented using JWT tokens and OAuth2 bearer authentication. Access control is implemented in the form of a simple RBAC model, with \texttt{user}, \texttt{content\_moderator} and \texttt{platform\_administrator} as roles. Swagger UI allows for easy testing of the API endpoints with examples, an OAuth login form, and docstrings in the code are automatically included in the OpenAPI documentation, making it easy to understand the purpose and usage of each endpoint. Additionally, a simple bespoke Python script was developed to convert the OpenAPI documentation to \LaTeX{} code, for inclusion in this report.
 
 Here's an example of a protected endpoint:
-\begin{lstlisting}[language=Python,basicstyle=\small]
+\begin{lstlisting}[language=Python]
 @game_router.post("/")
 async def create_game(
     game: GameCreate,
@@ -273,7 +286,7 @@ The request dependency features of FastAPI make it easy to ensure a consistent a
 
 Another security dependency, \texttt{Security(get\_current\_user\_optional)} was implemented to allow for optional authentication:
 
-\begin{lstlisting}[language=Python,basicstyle=\small]
+\begin{lstlisting}[language=Python]
 @game_router.get("/{game_id}")
 async def get_game(
     game_id: int,

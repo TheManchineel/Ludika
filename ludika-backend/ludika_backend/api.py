@@ -47,7 +47,6 @@ app.include_router(game_router, prefix="/games")
 app.include_router(tag_router, prefix="/tags")
 app.include_router(user_router, prefix="/users")
 app.include_router(review_router, prefix="/reviews")
-
 app.include_router(auth_router, prefix="/auth")
 
 app.mount("/static", StaticFiles(directory="./static"), name="static")
