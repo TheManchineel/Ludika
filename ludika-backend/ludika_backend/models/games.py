@@ -70,6 +70,11 @@ class GameImage(SQLModel, table=True):
     game: Game = Relationship(back_populates="images")
 
 
+class GameImagePublic(SQLModel):
+    position: int
+    image: str
+
+
 class GamePublic(GameBase):
     """
     Represents a game with public fields.
@@ -79,7 +84,7 @@ class GamePublic(GameBase):
     created_at: datetime
     updated_at: datetime
     tags: list["Tag"] = []
-    images: list[GameImage] | None
+    images: list[GameImagePublic] | None = []
     status: GameStatus
 
 
@@ -132,6 +137,3 @@ class TagCreate(TagBase):
 class TagUpdate(SQLModel):
     name: str | None = None
     icon: str | None = None
-
-
-
