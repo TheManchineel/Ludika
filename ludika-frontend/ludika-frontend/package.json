@@ -14,14 +14,13 @@
     "@nuxt/eslint": "1.7.1",
     "@nuxt/image": "1.10.0",
     "@nuxt/scripts": "0.11.10",
-    "@nuxt/ui": "3.3.0",
     "@unhead/vue": "^2.0.12",
     "@vuestic/nuxt": "^1.0.21",
     "eslint": "^9.32.0",
     "material-design-icons-iconfont": "^6.7.0",
-    "nuxt": "^4.0.1",
+    "nuxt": "^4.0.2",
     "typescript": "^5.8.3",
-    "vue": "^3.5.17",
+    "vue": "^3.5.18",
     "vue-router": "^4.5.1"
   }
 }

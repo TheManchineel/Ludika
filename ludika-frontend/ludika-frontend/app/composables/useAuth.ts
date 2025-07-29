@@ -1,34 +1,46 @@
 import type { AuthToken, LoginCredentials, UserPublic, AuthState } from '../../types/auth'
+import { UserRole } from '../../types/auth'
 
 const AUTH_TOKEN_KEY = 'ludika_auth_token'
 
-export const useAuth = () => {
-    const state = reactive<AuthState>({
-        user: null,
-        token: null,
-        isAuthenticated: false,
-        isLoading: false
-    })
+export const getUserRoleDisplayName = (role: UserRole): string => {
+    switch (role) {
+        case UserRole.USER:
+            return 'User'
+        case UserRole.CONTENT_MODERATOR:
+            return 'Content Moderator'
+        case UserRole.PLATFORM_ADMINISTRATOR:
+            return 'Platform Administrator'
+        default:
+            return 'Unknown Role'
+    }
+}
 
-    // Initialize auth state from localStorage on client side
+// Global state that will be shared across all useAuth() calls
+const globalState = reactive<AuthState>({
+    user: null,
+    token: null,
+    isAuthenticated: false,
+    isLoading: false
+})
+
+export const useAuth = () => {
     const initializeAuth = () => {
-        if (process.client) {
+        if (import.meta.client) {
             const storedToken = localStorage.getItem(AUTH_TOKEN_KEY)
+            console.log('Stored token:', storedToken)
             if (storedToken) {
-                state.token = storedToken
-                state.isAuthenticated = true
-                // Fetch user info if we have a token
+                globalState.token = storedToken
+                globalState.isAuthenticated = true
                 getCurrentUser()
             }
         }
     }
 
-    // Login function
     const login = async (credentials: LoginCredentials): Promise<void> => {
-        state.isLoading = true
+        globalState.isLoading = true
 
         try {
-            // Create form data as required by the backend
             const formData = new FormData()
             formData.append('username', credentials.username)
             formData.append('password', credentials.password)
@@ -38,54 +50,51 @@ export const useAuth = () => {
                 body: formData
             })
 
-            // Store token
-            state.token = response.access_token
-            state.isAuthenticated = true
+            globalState.token = response.access_token
+            globalState.isAuthenticated = true
 
-            if (process.client) {
+            if (import.meta.client) {
                 localStorage.setItem(AUTH_TOKEN_KEY, response.access_token)
             }
 
-            // Fetch user info
             await getCurrentUser()
         } catch (error) {
-            state.token = null
-            state.isAuthenticated = false
-            state.user = null
+            console.log(error)
+            globalState.token = null
+            globalState.isAuthenticated = false
+            globalState.user = null
 
-            if (process.client) {
+            if (import.meta.client) {
                 localStorage.removeItem(AUTH_TOKEN_KEY)
             }
 
             throw error
         } finally {
-            state.isLoading = false
+            globalState.isLoading = false
         }
     }
 
-    // Logout function
     const logout = () => {
-        state.token = null
-        state.user = null
-        state.isAuthenticated = false
+        globalState.token = null
+        globalState.user = null
+        globalState.isAuthenticated = false
 
-        if (process.client) {
+        if (import.meta.client) {
             localStorage.removeItem(AUTH_TOKEN_KEY)
         }
     }
 
-    // Get current user info
     const getCurrentUser = async (): Promise<void> => {
-        if (!state.token) return
+        if (!globalState.token) return
 
         try {
             const user = await $fetch<UserPublic>('/api/v1/users/me', {
                 headers: {
-                    Authorization: `Bearer ${state.token}`
+                    Authorization: `Bearer ${globalState.token}`
                 }
             })
 
-            state.user = user
+            globalState.user = user
         } catch (error) {
             // Token might be invalid, logout
             logout()
@@ -93,11 +102,10 @@ export const useAuth = () => {
         }
     }
 
-    // Create authenticated fetch wrapper
     const authenticatedFetch = async <T>(url: string, options: any = {}): Promise<T> => {
         const headers = {
             ...options.headers,
-            ...(state.token && { Authorization: `Bearer ${state.token}` })
+            ...(globalState.token && { Authorization: `Bearer ${globalState.token}` })
         }
 
         return $fetch<T>(url, {
@@ -106,30 +114,36 @@ export const useAuth = () => {
         })
     }
 
-    // Check if user has specific role
-    const hasRole = (role: string): boolean => {
-        return state.user?.user_role === role
+    const hasRole = (role: UserRole): boolean => {
+        return globalState.user?.user_role === role
     }
 
-    // Check if user is admin
     const isAdmin = (): boolean => {
-        return hasRole('platform_administrator')
+        return hasRole(UserRole.PLATFORM_ADMINISTRATOR)
+    }
+
+    const isContentModerator = (): boolean => {
+        return hasRole(UserRole.CONTENT_MODERATOR)
+    }
+
+    const isUser = (): boolean => {
+        return hasRole(UserRole.USER)
     }
 
     return {
-        // State (readonly)
-        user: readonly(toRef(state, 'user')),
-        token: readonly(toRef(state, 'token')),
-        isAuthenticated: readonly(toRef(state, 'isAuthenticated')),
-        isLoading: readonly(toRef(state, 'isLoading')),
+        user: readonly(toRef(globalState, 'user')),
+        token: readonly(toRef(globalState, 'token')),
+        isAuthenticated: readonly(toRef(globalState, 'isAuthenticated')),
+        isLoading: readonly(toRef(globalState, 'isLoading')),
 
-        // Methods
         login,
         logout,
         getCurrentUser,
         initializeAuth,
         authenticatedFetch,
         hasRole,
-        isAdmin
+        isAdmin,
+        isContentModerator,
+        isUser
     }
 } 

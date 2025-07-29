@@ -17,6 +17,7 @@ watch(isAuthenticated, (authenticated) => {
 const handleLoginSuccess = () => {
   navigateTo('/')
   console.log('Login successful')
+  console.log(isAuthenticated.value)
 }
 </script>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useAuth } from '~/composables/useAuth'
+import { useAuth, getUserRoleDisplayName } from '~/composables/useAuth'
 
 const { user, isAuthenticated, logout, isAdmin } = useAuth()
 
@@ -19,7 +19,7 @@ const handleLogout = () => {
       <VaDropdownContent class="user-dropdown">
         <div class="user-info">
           <div class="user-name">{{ user.visible_name }}</div>
-          <div class="user-role">{{ user.user_role.replace('_', ' ') }}</div>
+          <div class="user-role">{{ getUserRoleDisplayName(user.user_role) }}</div>
         </div>
 
         <VaDivider />

@@ -10,26 +10,27 @@ onMounted(() => {
 
 <template>
   <div class="app-layout">
-    <VaNavbar class="app-navbar">
-      <template #left>
-        <div class="navbar-content">
-          <VaNavbarItem class="navbar-item-padded">
-            <NuxtLink to="/" class="navbar-brand">
-              LUDIKA
-            </NuxtLink>
-          </VaNavbarItem>
-        </div>
-      </template>
-      <template #right>
-        <div class="navbar-content">
+    <VaAffix :offset-top="0">
+      <VaNavbar class="app-navbar">
+        <template #left>
+          <div class="navbar-content">
+            <VaNavbarItem class="navbar-item-padded">
+              <NuxtLink to="/" class="navbar-brand">
+                LUDIKA
+              </NuxtLink>
+            </VaNavbarItem>
+          </div>
+        </template>
+        <template #right>
+          <div class="navbar-content">
 
-          <VaNavbarItem class="navbar-item-padded">
-            <UserMenu />
-          </VaNavbarItem>
-        </div>
-      </template>
-    </VaNavbar>
-
+            <VaNavbarItem class="navbar-item-padded">
+              <UserMenu />
+            </VaNavbarItem>
+          </div>
+        </template>
+      </VaNavbar>
+    </VaAffix>
     <main class="app-main">
       <slot />
     </main>
