@@ -108,10 +108,36 @@ export const useAuth = () => {
             ...(globalState.token && { Authorization: `Bearer ${globalState.token}` })
         }
 
-        return $fetch<T>(url, {
-            ...options,
-            headers
-        })
+        try {
+            return await $fetch<T>(url, {
+                ...options,
+                headers
+            })
+        } catch (error: any) {
+            if (error?.status === 401 || error?.statusCode === 401) {
+                console.log('401 error detected, logging out and retrying without auth')
+
+                logout()
+
+                try {
+                    const headersWithoutAuth = { ...options.headers }
+                    return await $fetch<T>(url, {
+                        ...options,
+                        headers: headersWithoutAuth
+                    })
+                } catch (retryError: any) {
+                    console.log('Retry without auth also failed, redirecting to login')
+
+                    if (import.meta.client) {
+                        await navigateTo('/login')
+                    }
+
+                    throw retryError
+                }
+            }
+
+            throw error
+        }
     }
 
     const hasRole = (role: UserRole): boolean => {

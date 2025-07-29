@@ -15,52 +15,52 @@ const imageUrl = computed(() => {
   if (!firstImage.value) return null
   return `/static/${firstImage.value.image}`
 })
-
-const displayTags = computed(() => {
-  return props.game.tags.slice(0, 5)
-})
 </script>
 
 <template>
-  <VaCard class="game-card">
-    <div class="game-image-container">
-      <div v-if="imageUrl" class="game-image">
-        <NuxtImg
-            :src="imageUrl"
-            :alt="game.name"
-            class="game-image-img"
-            loading="lazy"
-        />
+  <NuxtLink :to="`/games/${game.id}`" class="game-card-link">
+    <VaCard class="game-card">
+      <div class="game-image-container">
+        <div v-if="imageUrl" class="game-image">
+          <NuxtImg :src="imageUrl" :alt="game.name" class="game-image-img" loading="lazy" />
+        </div>
+        <div v-else class="game-image-placeholder">
+          <VaIcon name="image" size="large" />
+        </div>
       </div>
-      <div v-else class="game-image-placeholder">
-        <VaIcon name="image" size="large" />
+
+      <div class="game-content">
+        <h3 class="game-title">{{ game.name }}</h3>
+
+        <GameTags :tags="game.tags" :limit="5" size="small" class="game-card-tags" />
       </div>
-    </div>
-    
-    <div class="game-content">
-      <h3 class="game-title">{{ game.name }}</h3>
-      
-      <div class="game-tags">
-        <VaChip
-          v-for="tag in displayTags"
-          :key="tag.id"
-          :color="'primary'"
-          size="small"
-          class="game-tag"
-        >
-          {{ tag.name }}
-        </VaChip>
-      </div>
-    </div>
-  </VaCard>
+    </VaCard>
+  </NuxtLink>
 </template>
 
 <style scoped>
+.game-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.game-card-link:hover {
+  transform: translateY(-2px);
+}
+
+.game-card-link:hover .game-card {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
 .game-card {
   height: 320px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
 }
 
 .game-image-container {
@@ -106,15 +106,7 @@ const displayTags = computed(() => {
   line-height: 1.3;
 }
 
-.game-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+.game-card-tags {
   min-height: 2.5rem;
-  align-items: flex-start;
 }
-
-.game-tag {
-  font-size: 0.75rem;
-}
-</style> 
+</style>

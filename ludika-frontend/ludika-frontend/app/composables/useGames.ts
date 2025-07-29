@@ -3,8 +3,11 @@ import { useAuth } from './useAuth'
 
 export const useGames = () => {
   const games = ref<GamePublic[]>([])
+  const game = ref<GamePublic | null>(null)
   const loading = ref(false)
+  const gameLoading = ref(false)
   const error = ref<string | null>(null)
+  const gameError = ref<string | null>(null)
 
   const { authenticatedFetch } = useAuth()
 
@@ -13,7 +16,6 @@ export const useGames = () => {
     error.value = null
 
     try {
-      // Build the URL with search query if provided
       let url = '/api/v1/games/'
       if (searchQuery && searchQuery.trim()) {
         url += `?search=${encodeURIComponent(searchQuery.trim())}`
@@ -29,10 +31,29 @@ export const useGames = () => {
     }
   }
 
+  const fetchGameById = async (id: string | number) => {
+    gameLoading.value = true
+    gameError.value = null
+
+    try {
+      const response = await authenticatedFetch<GamePublic>(`/api/v1/games/${id}`)
+      game.value = response
+    } catch (err) {
+      gameError.value = 'Failed to fetch game'
+      console.error('Error fetching game:', err)
+    } finally {
+      gameLoading.value = false
+    }
+  }
+
   return {
     games: readonly(games),
+    game: readonly(game),
     loading: readonly(loading),
+    gameLoading: readonly(gameLoading),
     error: readonly(error),
-    fetchGames
+    gameError: readonly(gameError),
+    fetchGames,
+    fetchGameById
   }
 } 
