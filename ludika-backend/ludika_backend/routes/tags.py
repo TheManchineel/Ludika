@@ -3,7 +3,7 @@ from fastapi.params import Security
 from sqlmodel import Session, select
 
 from ludika_backend.controllers.auth import get_current_user
-from ludika_backend.models.games import Tag, TagUpdate
+from ludika_backend.models.games import Tag, TagCreate, TagUpdate
 from ludika_backend.models.users import UserRole, User
 from ludika_backend.utils.db import get_session
 
@@ -23,7 +23,7 @@ async def get_tags(db_session: Session = Depends(get_session)):
 
 @tag_router.post("/")
 async def add_tag(
-    name: str,
+    tag: TagCreate,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
 ):
@@ -33,12 +33,10 @@ async def add_tag(
             status_code=403, detail="You do not have permission to create tags."
         )
 
-    if db_session.exec(select(Tag).where(Tag.name == name)).first() is not None:
+    if db_session.exec(select(Tag).where(Tag.name == tag.name)).first() is not None:
         raise HTTPException(status_code=400, detail="Tag already exists")
 
-    db_tag = Tag(
-        name=name,
-    )
+    db_tag = Tag(**tag.model_dump())
     db_session.add(db_tag)
     db_session.commit()
     db_session.refresh(db_tag)
