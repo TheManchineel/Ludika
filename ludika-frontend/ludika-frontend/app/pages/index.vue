@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { useGames } from '../composables/useGames'
+import { useGames } from '~/composables/useGames'
 
 definePageMeta({
-  layout: 'home'
+  layout: 'default'
 })
 
 const searchQuery = ref('')
 const { games, loading, error, fetchGames } = useGames()
 
-// Fetch games on page load
+// Watch for search query changes
+watch(searchQuery, (newQuery) => {
+  fetchGames(newQuery)
+})
+
+// Initial load
 onMounted(() => {
   fetchGames()
 })
@@ -16,46 +21,33 @@ onMounted(() => {
 
 <template>
   <div>
-    <!-- Hero Section -->
     <div class="hero-section">
       <div class="hero-content">
         <h1 class="hero-title">Ludika</h1>
-        <p class="hero-subtitle">An ever–growing collection of educational games</p>
+        <p class="hero-subtitle">An ever–growing collection of educational games.</p>
         <div class="search-container">
-          <VaInput
-            v-model="searchQuery"
-            placeholder="Search for games..."
-            class="search-input"
-            prepend-inner="search"
-            preset="solid"
-            clearable
-          />
+          <VaInput v-model="searchQuery" placeholder="Search for games..." class="search-input" prepend-inner="search"
+            preset="solid" clearable />
         </div>
       </div>
     </div>
 
-    <!-- Games Grid Section -->
     <div class="games-section">
       <div class="container">
         <div v-if="loading" class="loading-container">
           <VaProgressCircle indeterminate />
-          <p>Loading games...</p>
         </div>
-        
+
         <div v-else-if="error" class="error-container">
           <VaAlert color="danger" :title="error" />
         </div>
-        
+
         <div v-else-if="games.length === 0" class="empty-container">
           <p>No games found.</p>
         </div>
-        
+
         <div v-else class="games-grid">
-          <GameCard
-            v-for="game in games"
-            :key="game.id"
-            :game="game"
-          />
+          <GameCard v-for="game in games" :key="game.id" :game="game" />
         </div>
       </div>
     </div>
@@ -103,21 +95,6 @@ onMounted(() => {
   width: 100%;
 }
 
-/* :deep(.va-input) {
-  background: white;
-  border-radius: 50px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-} */
-
-:deep(.va-input__input) {
-  font-size: 1.1rem;
-  padding: 1rem 1.5rem;
-}
-
-:deep(.va-input__prepend-inner) {
-  color: #666;
-  margin-right: 0.5rem;
-}
 
 .games-section {
   padding: 3rem 0;
@@ -125,9 +102,9 @@ onMounted(() => {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: var(--container-max-width);
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 var(--container-padding);
 }
 
 .loading-container,

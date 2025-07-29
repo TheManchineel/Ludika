@@ -4,13 +4,13 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   modules: [
-    // '@nuxt/content',
-    // '@nuxt/eslint',
-    // '@nuxt/image',
-    // '@nuxt/scripts',
-    // '@nuxt/ui'
-    "@vuestic/nuxt"
+    "@vuestic/nuxt",
+    "@nuxt/image"
   ],
+
+  image: {
+    provider: 'none'
+  },
 
   vuestic: {
     config: {

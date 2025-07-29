@@ -1,16 +1,25 @@
 import type { GamePublic } from '../../types/game'
+import { useAuth } from './useAuth'
 
 export const useGames = () => {
   const games = ref<GamePublic[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  const fetchGames = async () => {
+  const { authenticatedFetch } = useAuth()
+
+  const fetchGames = async (searchQuery?: string) => {
     loading.value = true
     error.value = null
-    
+
     try {
-      const response = await $fetch<GamePublic[]>('/api/v1/games/')
+      // Build the URL with search query if provided
+      let url = '/api/v1/games/'
+      if (searchQuery && searchQuery.trim()) {
+        url += `?search=${encodeURIComponent(searchQuery.trim())}`
+      }
+
+      const response = await authenticatedFetch<GamePublic[]>(url)
       games.value = response
     } catch (err) {
       error.value = 'Failed to fetch games'

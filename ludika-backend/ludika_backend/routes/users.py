@@ -24,11 +24,18 @@ async def list_users(
 ) -> list[UserPublic]:
     """Get all users (privileged users only)."""
     if not current_user.is_privileged():
-        raise HTTPException(
-            status_code=403, detail="You do not have permission to view users."
-        )
+        raise HTTPException(status_code=403, detail="You do not have permission to view users.")
     users = db_session.exec(select(User)).all()
     return users
+
+
+@user_router.get("/me")
+async def get_me(
+    db_session: Session = Depends(get_session),
+    current_user: User = Security(get_current_user),
+) -> UserPublic:
+    """Get the current user."""
+    return current_user
 
 
 @user_router.patch("/me/visible-name")
@@ -67,9 +74,7 @@ async def get_user(
 ) -> UserPublic:
     """Get a specific user by ID (privileged users only)."""
     if not current_user.is_privileged():
-        raise HTTPException(
-            status_code=403, detail="You do not have permission to view users."
-        )
+        raise HTTPException(status_code=403, detail="You do not have permission to view users.")
     user = db_session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
@@ -85,9 +90,7 @@ async def admin_update_user(
 ) -> UserPublic:
     """Update a user (privileged users only)."""
     if not current_user.is_privileged():
-        raise HTTPException(
-            status_code=403, detail="You do not have permission to update users."
-        )
+        raise HTTPException(status_code=403, detail="You do not have permission to update users.")
     user = db_session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
@@ -95,9 +98,7 @@ async def admin_update_user(
         user.enabled = update.enabled
     if update.user_role is not None:
         if current_user.user_role != UserRole.PLATFORM_ADMINISTRATOR:
-            raise HTTPException(
-                status_code=403, detail="Only admins can change user roles."
-            )
+            raise HTTPException(status_code=403, detail="Only admins can change user roles.")
         user.user_role = update.user_role
     db_session.add(user)
     db_session.commit()

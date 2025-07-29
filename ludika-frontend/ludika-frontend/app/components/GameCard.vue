@@ -24,14 +24,17 @@ const displayTags = computed(() => {
 <template>
   <VaCard class="game-card">
     <div class="game-image-container">
-      <VaAspectRatio :ratio="4/3">
-        <div v-if="imageUrl" class="game-image">
-          <img :src="imageUrl" :alt="game.name" >
-        </div>
-        <div v-else class="game-image-placeholder">
-          <VaIcon name="image" size="large" />
-        </div>
-      </VaAspectRatio>
+      <div v-if="imageUrl" class="game-image">
+        <NuxtImg
+            :src="imageUrl"
+            :alt="game.name"
+            class="game-image-img"
+            loading="lazy"
+        />
+      </div>
+      <div v-else class="game-image-placeholder">
+        <VaIcon name="image" size="large" />
+      </div>
     </div>
     
     <div class="game-content">
@@ -74,7 +77,7 @@ const displayTags = computed(() => {
   background-color: #f5f5f5;
 }
 
-.game-image img {
+.game-image-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
