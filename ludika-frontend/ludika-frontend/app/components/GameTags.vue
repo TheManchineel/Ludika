@@ -1,23 +1,23 @@
-<script setup lang="ts">
-import type { TagPublic } from '~~/types/game'
+        <script setup lang="ts">
+        import type { TagPublic } from '~~/types/game'
 
-interface Props {
-    tags: readonly TagPublic[]
-    limit?: number
-    size?: 'small' | 'medium' | 'large'
-}
+        interface Props {
+            tags: readonly TagPublic[]
+            limit?: number
+            size?: 'small' | 'medium' | 'large'
+        }
 
-const props = withDefaults(defineProps<Props>(), {
-    limit: undefined,
-    size: 'small'
-})
+        const props = withDefaults(defineProps<Props>(), {
+            limit: undefined,
+            size: 'small'
+        })
 
-const displayTags = computed(() => {
-    if (props.limit !== undefined) {
-        return props.tags.slice(0, props.limit)
-    }
-    return props.tags
-})
+        const displayTags = computed(() => {
+            if (props.limit !== undefined) {
+                return props.tags.slice(0, props.limit)
+            }
+            return props.tags
+        })
 </script>
 
 <template>

@@ -42,23 +42,27 @@ async def get_games(
 ) -> list[GamePublic]:
     """Retrieve a list of all approved games with pagination, tag filtering and search."""
 
-    statement = (
-        select(Game)
-        .where(or_(Game.status == GameStatus.APPROVED.value)))
+    statement = select(Game).where(or_(Game.status == GameStatus.APPROVED.value))
 
     if tags:
         try:
             tag_ids = [int(tag.strip()) for tag in tags.split(",")]
             statement = statement.where(Game.tags.any(Tag.id.in_(tag_ids)))
         except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid tags format (must be a comma-separated list of integers)")
-
+            raise HTTPException(
+                status_code=400, detail="Invalid tags format (must be a comma-separated list of integers)"
+            )
 
     if search:
-        statement = statement.where(or_(Game.name.ilike(f"%{search}%"), Game.description.ilike(f"%{search}%"), Game.tags.any(Tag.name.ilike(f"%{search}%"))))
+        statement = statement.where(
+            or_(
+                Game.name.ilike(f"%{search}%"),
+                Game.description.ilike(f"%{search}%"),
+                Game.tags.any(Tag.name.ilike(f"%{search}%")),
+            )
+        )
 
     statement = statement.offset(page * limit).limit(limit)
-
 
     results = db_session.exec(statement)
     games = results.all()
@@ -73,12 +77,7 @@ async def get_my_games(
     current_user: User = Security(get_current_user),
 ) -> list[GamePublic]:
     """Get games created by the current user."""
-    statement = (
-        select(Game)
-        .where(Game.proposing_user == current_user.uuid)
-        .offset(page * limit)
-        .limit(limit)
-    )
+    statement = select(Game).where(Game.proposing_user == current_user.uuid).offset(page * limit).limit(limit)
     results = db_session.exec(statement)
     games = results.all()
     return games
@@ -93,16 +92,9 @@ async def get_games_waiting_for_approval(
 ) -> list[GamePublic]:
     """Get games waiting for approval (privileged users only)."""
     if not current_user.is_privileged():
-        raise HTTPException(
-            status_code=403, detail="You do not have permission to view this."
-        )
+        raise HTTPException(status_code=403, detail="You do not have permission to view this.")
 
-    statement = (
-        select(Game)
-        .where(Game.status == GameStatus.SUBMITTED.value)
-        .offset(page * limit)
-        .limit(limit)
-    )
+    statement = select(Game).where(Game.status == GameStatus.SUBMITTED.value).offset(page * limit).limit(limit)
     results = db_session.exec(statement)
     games = results.all()
     return games
@@ -158,9 +150,6 @@ async def get_game_with_reviews(
     return game
 
 
-
-
-
 @game_router.post("/")
 async def create_game(
     game: GameCreate,
@@ -168,7 +157,10 @@ async def create_game(
     current_user: User = Security(get_current_user),
 ) -> GamePublic:
     """Create a new game."""
-    tags = db_session.exec(select(Tag).where(Tag.id.in_(game.tags))).all()
+    if game.tags:
+        tags = db_session.exec(select(Tag).where(Tag.id.in_(game.tags))).all()
+    else:
+        tags = []
     db_game = Game.model_validate(
         game,
         update={
@@ -201,9 +193,7 @@ async def delete_game(
         db_session.commit()
         return {"status": "ok"}
     else:
-        raise HTTPException(
-            status_code=403, detail="You do not have permission to delete this game."
-        )
+        raise HTTPException(status_code=403, detail="You do not have permission to delete this game.")
 
 
 @game_router.patch("/{game_id}")
@@ -218,17 +208,12 @@ async def update_game(
     if not db_game:
         raise HTTPException(status_code=404, detail="Game not found")
     if not current_user.can_edit_game(db_game):
-        raise HTTPException(
-            status_code=403, detail="You do not have permission to update this game."
-        )
+        raise HTTPException(status_code=403, detail="You do not have permission to update this game.")
     update_data = game_update.model_dump(exclude_unset=True)
 
     if "status" in update_data:
         if not current_user.is_privileged():
-            if (
-                update_data["status"] != GameStatus.SUBMITTED.value
-                or db_game.status != GameStatus.DRAFT.value
-            ):
+            if update_data["status"] != GameStatus.SUBMITTED.value or db_game.status != GameStatus.DRAFT.value:
                 raise HTTPException(
                     status_code=403,
                     detail="You do not have permission to update the status of this game.",
@@ -262,13 +247,9 @@ async def get_game_image(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
     if not game.is_visible_by(current_user):
-        raise HTTPException(
-            status_code=403, detail="You do not have permission to view this game."
-        )
+        raise HTTPException(status_code=403, detail="You do not have permission to view this game.")
     image_record = db_session.exec(
-        select(GameImage).where(
-            GameImage.game_id == game_id, GameImage.position == image_no
-        )
+        select(GameImage).where(GameImage.game_id == game_id, GameImage.position == image_no)
     ).first()
     if not image_record:
         raise HTTPException(status_code=404, detail="Image not found")
@@ -290,9 +271,7 @@ async def post_game_image(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
     if not current_user.can_edit_game(game):
-        raise HTTPException(
-            status_code=403, detail="You do not have permission to edit this game."
-        )
+        raise HTTPException(status_code=403, detail="You do not have permission to edit this game.")
     img_uuid = add_game_image_last(db_session, game_id, file.file)
     return {"status": "ok", "filename": img_uuid}
 
@@ -310,9 +289,7 @@ async def replace_game_image(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
     if not current_user.can_edit_game(game):
-        raise HTTPException(
-            status_code=403, detail="You do not have permission to edit this game."
-        )
+        raise HTTPException(status_code=403, detail="You do not have permission to edit this game.")
     img_uuid = overwrite_game_image(db_session, game_id, image_no, file.file)
     if not img_uuid:
         raise HTTPException(status_code=404, detail="Image not found to replace")
@@ -331,9 +308,7 @@ async def delete_game_image(
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
     if not current_user.can_edit_game(game):
-        raise HTTPException(
-            status_code=403, detail="You do not have permission to edit this game."
-        )
+        raise HTTPException(status_code=403, detail="You do not have permission to edit this game.")
     deleted = delete_image_from_game(db_session, game_id, image_no)
     if not deleted:
         raise HTTPException(status_code=404, detail="Image not found")

@@ -19,4 +19,5 @@ export interface GamePublic {
   tags: readonly TagPublic[]
   images: readonly GameImage[]
   status: string
+  proposing_user: string | null
 } 

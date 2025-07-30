@@ -86,6 +86,7 @@ class GamePublic(GameBase):
     tags: list["Tag"] = []
     images: list[GameImagePublic] | None = []
     status: GameStatus
+    proposing_user: UUID | None
 
 
 class GameWithReviews(GamePublic):

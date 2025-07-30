@@ -27,6 +27,12 @@ export interface LoginCredentials {
     password: string
 }
 
+export interface SignupCredentials {
+    email: string
+    visible_name: string
+    password: string
+}
+
 export interface UserPublic {
     visible_name: string
     user_role: UserRole

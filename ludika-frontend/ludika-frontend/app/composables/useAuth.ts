@@ -1,4 +1,4 @@
-import type { AuthToken, LoginCredentials, UserPublic, AuthState } from '../../types/auth'
+import type { AuthToken, LoginCredentials, SignupCredentials, UserPublic, AuthState } from '../../types/auth'
 import { UserRole } from '../../types/auth'
 
 const AUTH_TOKEN_KEY = 'ludika_auth_token'
@@ -74,6 +74,41 @@ export const useAuth = () => {
         }
     }
 
+    const signup = async (credentials: SignupCredentials): Promise<void> => {
+        globalState.isLoading = true
+
+        try {
+            const formData = new FormData()
+            formData.append('email', credentials.email)
+            formData.append('visible_name', credentials.visible_name)
+            formData.append('password', credentials.password)
+
+            await $fetch('/api/v1/auth/signup', {
+                method: 'POST',
+                body: formData
+            })
+
+            // After successful signup, automatically log in
+            await login({
+                username: credentials.email,
+                password: credentials.password
+            })
+        } catch (error) {
+            console.log(error)
+            globalState.token = null
+            globalState.isAuthenticated = false
+            globalState.user = null
+
+            if (import.meta.client) {
+                localStorage.removeItem(AUTH_TOKEN_KEY)
+            }
+
+            throw error
+        } finally {
+            globalState.isLoading = false
+        }
+    }
+
     const logout = () => {
         globalState.token = null
         globalState.user = null
@@ -103,6 +138,11 @@ export const useAuth = () => {
     }
 
     const authenticatedFetch = async <T>(url: string, options: any = {}): Promise<T> => {
+        // Ensure auth is initialized on client-side
+        if (import.meta.client && !globalState.token) {
+            initializeAuth()
+        }
+
         const headers = {
             ...options.headers,
             ...(globalState.token && { Authorization: `Bearer ${globalState.token}` })
@@ -156,6 +196,36 @@ export const useAuth = () => {
         return hasRole(UserRole.USER)
     }
 
+    const isPrivileged = (): boolean => {
+        return isAdmin() || isContentModerator()
+    }
+
+    const canEditGame = (game: any): boolean => {
+        if (!globalState.user) return false
+
+        // Privileged users can edit any game
+        if (isPrivileged()) {
+            return true
+        }
+
+        // Regular users can edit their own games if they're in draft status
+        if (game.proposing_user === globalState.user.uuid && game.status === 'draft') {
+            return true
+        }
+
+        return false
+    }
+
+    // SSR-aware wrapper for any async function that needs authentication
+    const withSSRCheck = <T extends (...args: any[]) => Promise<any>>(fn: T): T => {
+        return ((...args: any[]) => {
+            if (!import.meta.client) {
+                return Promise.resolve()
+            }
+            return fn(...args)
+        }) as T
+    }
+
     return {
         user: readonly(toRef(globalState, 'user')),
         token: readonly(toRef(globalState, 'token')),
@@ -163,13 +233,17 @@ export const useAuth = () => {
         isLoading: readonly(toRef(globalState, 'isLoading')),
 
         login,
+        signup,
         logout,
         getCurrentUser,
         initializeAuth,
         authenticatedFetch,
+        withSSRCheck,
         hasRole,
         isAdmin,
         isContentModerator,
-        isUser
+        isUser,
+        isPrivileged,
+        canEditGame
     }
 } 

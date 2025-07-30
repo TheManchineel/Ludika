@@ -49,24 +49,24 @@ class User(UserBase, table=True):
     password_hash: str | None
     reviews: list["Review"] = Relationship(back_populates="author")
 
+    def is_privileged(self):
+        return self.user_role.is_privileged()
+
     def can_edit_game(self, game: "Game"):
-        if self.user_role.is_privileged():
+        if self.is_privileged():
             return True
         if game.proposing_user == self.uuid and game.status == "draft":
             return True
         return False
 
     def can_access_game(self, game: "Game"):
-        if self.user_role.is_privileged():
+        if self.is_privileged():
             return True
         if game.status == "approved":
             return True
         if game.proposing_user == self.uuid:
             return True
         return False
-
-    def is_privileged(self):
-        return self.user_role.is_privileged()
 
 
 class UserPublic(UserBase):

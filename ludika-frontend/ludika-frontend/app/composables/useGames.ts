@@ -9,9 +9,9 @@ export const useGames = () => {
   const error = ref<string | null>(null)
   const gameError = ref<string | null>(null)
 
-  const { authenticatedFetch } = useAuth()
+  const { authenticatedFetch, withSSRCheck } = useAuth()
 
-  const fetchGames = async (searchQuery?: string) => {
+  const _fetchGames = async (searchQuery?: string) => {
     loading.value = true
     error.value = null
 
@@ -31,7 +31,10 @@ export const useGames = () => {
     }
   }
 
-  const fetchGameById = async (id: string | number) => {
+  // SSR-safe version
+  const fetchGames = withSSRCheck(_fetchGames)
+
+  const _fetchGameById = async (id: string | number) => {
     gameLoading.value = true
     gameError.value = null
 
@@ -45,6 +48,9 @@ export const useGames = () => {
       gameLoading.value = false
     }
   }
+
+  // SSR-safe version
+  const fetchGameById = withSSRCheck(_fetchGameById)
 
   return {
     games: readonly(games),

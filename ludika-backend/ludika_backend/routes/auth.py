@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 from uuid import uuid4
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Form
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import SecretStr
 from sqlmodel import select, Session
@@ -20,9 +21,9 @@ auth_router = APIRouter()
 
 @auth_router.post("/signup")
 def signup(
-    email: str,
-    visible_name: str,
-    password: SecretStr,
+    email: Annotated[str, Form()],
+    visible_name: Annotated[str, Form()],
+    password: Annotated[SecretStr, Form()],
     session: Session = Depends(get_session),
 ) -> UserPublic:
     """Register a new user account."""
