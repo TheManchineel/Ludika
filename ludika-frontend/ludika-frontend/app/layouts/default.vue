@@ -68,7 +68,7 @@ onMounted(() => {
   font-size: 1.25rem;
   font-weight: 700;
   text-decoration: none;
-  color: #9423e0;
+  color: var(--va-primary);
 }
 
 .navbar-item-padded {

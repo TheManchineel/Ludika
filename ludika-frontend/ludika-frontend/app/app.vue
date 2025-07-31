@@ -16,4 +16,12 @@
 body {
   margin: 0;
 }
+
+/* Fix for Nuxt DevTools interfering with modals */
+.va-modal,
+[data-va-modal],
+.va-modal__dialog,
+.va-modal__container {
+  z-index: 9999999 !important;
+}
 </style>

@@ -25,6 +25,24 @@ const handleLogout = () => {
         <VaDivider />
 
         <VaList>
+          <VaListItem clickable @click="navigateTo('/create-game')">
+            <VaListItemSection avatar>
+              <VaIcon name="add_circle" />
+            </VaListItemSection>
+            <VaListItemSection>
+              <VaListItemLabel>Create Game</VaListItemLabel>
+            </VaListItemSection>
+          </VaListItem>
+
+          <VaListItem clickable @click="navigateTo('/my-games')">
+            <VaListItemSection avatar>
+              <VaIcon name="games" />
+            </VaListItemSection>
+            <VaListItemSection>
+              <VaListItemLabel>My Games</VaListItemLabel>
+            </VaListItemSection>
+          </VaListItem>
+
           <VaListItem v-if="isAdmin()" clickable @click="navigateTo('/admin')">
             <VaListItemSection avatar>
               <VaIcon name="admin_panel_settings" />

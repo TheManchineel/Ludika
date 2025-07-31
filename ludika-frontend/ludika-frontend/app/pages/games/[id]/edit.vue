@@ -1,44 +1,41 @@
 <template>
     <div class="edit-game-page">
         <div class="edit-game-content">
-            <h1 class="edit-title">
-                Edit Game
-            </h1>
+            <!-- Loading state -->
+            <div v-if="gameLoading" class="loading-state">
+                <VaProgressCircle indeterminate />
+                <p>Loading game data...</p>
+            </div>
 
-            <div class="placeholder-message">
-                <div class="placeholder-content">
-                    <svg class="placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                        </path>
-                    </svg>
-                    <h2>Game Editor Coming Soon</h2>
-                    <p>This page will allow you to edit game details, add images, and manage tags.</p>
-                    <p class="game-id">Game ID: {{ gameId }}</p>
-
-                    <div class="back-button-section">
-                        <NuxtLink :to="`/games/${gameId}`" class="back-button">
-                            <svg class="back-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
-                            Back to Game
-                        </NuxtLink>
-                    </div>
+            <!-- Error state -->
+            <div v-else-if="gameError" class="error-state">
+                <VaAlert color="danger" class="error-alert">
+                    {{ gameError }}
+                </VaAlert>
+                <div class="back-button-section">
+                    <VaButton preset="secondary" @click="$router.push(`/games/${gameId}`)">
+                        <VaIcon name="arrow_back" class="back-icon" />
+                        Back to Game
+                    </VaButton>
                 </div>
             </div>
+
+            <!-- Game form -->
+            <GameFormEditor v-else-if="game" :game-data="game" :is-editing="true" @success="handleSuccess"
+                @cancel="handleCancel" />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
+import type { GamePublic } from '~~/types/game'
 import { useAuth } from '~/composables/useAuth'
 import { useGames } from '~/composables/useGames'
+import GameFormEditor from '~/components/GameFormEditor.vue'
 
 // Get the game ID from the route
 const route = useRoute()
+const router = useRouter()
 const gameId = route.params.id as string
 
 // Set up auth and game data
@@ -49,6 +46,18 @@ const { game, gameLoading, gameError, fetchGameById } = useGames()
 useHead({
     title: `Edit Game ${gameId} - Ludika`
 })
+
+// Form event handlers
+const handleSuccess = (updatedGame: GamePublic) => {
+    // Navigate to the game's view page using the returned game ID
+    // This handles both edit (same ID) and create (new ID) scenarios
+    router.push(`/games/${updatedGame.id}`)
+}
+
+const handleCancel = () => {
+    // Navigate back to the game's view page
+    router.push(`/games/${gameId}`)
+}
 
 // Fetch the game data to check permissions
 onMounted(async () => {
@@ -76,90 +85,59 @@ watch(isAuthenticated, (authenticated) => {
 <style scoped>
 .edit-game-page {
     padding: 2rem;
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
+    min-height: calc(100vh - 4rem);
 }
 
 .edit-game-content {
     padding: 0 1rem;
 }
 
-.edit-title {
-    font-size: 3rem;
-    font-weight: 700;
-    color: #374151;
-    margin-bottom: 2rem;
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
     text-align: center;
+    gap: 1rem;
 }
 
-.placeholder-message {
-    text-align: center;
+.loading-state p {
     color: #6b7280;
-    margin-bottom: 2rem;
-}
-
-.placeholder-content {
-    padding: 3rem;
-    background-color: #fef3c7;
-    border-radius: 1rem;
-    border: 2px dashed #f59e0b;
-}
-
-.placeholder-icon {
-    width: 4rem;
-    height: 4rem;
-    margin: 0 auto 1.5rem;
-    color: #f59e0b;
-}
-
-.placeholder-content h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 1rem;
-}
-
-.placeholder-content p {
     font-size: 1.125rem;
-    margin-bottom: 0.5rem;
 }
 
-.game-id {
-    font-family: monospace;
-    background-color: #f3f4f6;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    display: inline-block;
-    margin-top: 1rem !important;
-    color: #374151 !important;
+.error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    padding: 2rem;
+}
+
+.error-alert {
+    max-width: 500px;
+    width: 100%;
 }
 
 .back-button-section {
-    margin-top: 2rem;
-}
-
-.back-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background-color: #6b7280;
-    color: white;
-    text-decoration: none;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    transition: all 0.2s ease-in-out;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.back-button:hover {
-    background-color: #4b5563;
-    transform: translateY(-1px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: center;
 }
 
 .back-icon {
-    width: 1.25rem;
-    height: 1.25rem;
+    margin-right: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .edit-game-page {
+        padding: 1rem;
+    }
+
+    .edit-game-content {
+        padding: 0;
+    }
 }
 </style>

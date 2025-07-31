@@ -15,14 +15,17 @@
                 <h1 class="game-title">
                     {{ game.name }}
                 </h1>
-                <NuxtLink v-if="canEditGame(game)" :to="`${game.id}/edit`" class="edit-button">
-                    <svg class="edit-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                        </path>
-                    </svg>
-                </NuxtLink>
+                <div class="title-actions">
+                    <GameStatusBadge :status="game.status" />
+                    <NuxtLink v-if="canEditGame(game)" :to="`/games/${game.id}/edit`" class="edit-button">
+                        <svg class="edit-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                            </path>
+                        </svg>
+                    </NuxtLink>
+                </div>
             </div>
 
             <div class="action-buttons-section">
@@ -43,6 +46,22 @@
                     </svg>
                     Review Game
                 </NuxtLink>
+
+                <!-- Status Action Buttons -->
+                <button v-if="canSubmitGame" @click="showSubmitModal = true" class="submit-button">
+                    <font-awesome-icon icon="paper-plane" class="action-icon" />
+                    Submit Game
+                </button>
+
+                <button v-if="canApproveGame" @click="showApproveModal = true" class="approve-button">
+                    <font-awesome-icon icon="check-circle" class="action-icon" />
+                    Approve Game
+                </button>
+
+                <button v-if="canRejectGame" @click="showRejectModal = true" class="reject-button">
+                    <font-awesome-icon icon="times-circle" class="action-icon" />
+                    Reject Game
+                </button>
             </div>
 
             <div class="game-description">
@@ -76,12 +95,31 @@
         <div v-else-if="!gameLoading && !game && isClient" class="not-found-state">
             <div class="not-found-text">Game not found</div>
         </div>
+
+        <!-- Confirmation Modals -->
+        <ConfirmationModal v-model="showSubmitModal" title="Submit Game for Review"
+            message="Are you sure you want to submit this game for review?"
+            warning-message="Once submitted, you won't be able to make further changes to the game."
+            confirm-text="Submit" confirm-color="primary" :loading="updateLoading" @confirm="handleSubmitGame"
+            @cancel="showSubmitModal = false" />
+
+        <ConfirmationModal v-model="showApproveModal" title="Approve Game"
+            message="Are you sure you want to approve this game? It will be published and visible to all users."
+            confirm-text="Approve" confirm-color="success" :loading="updateLoading" @confirm="handleApproveGame"
+            @cancel="showApproveModal = false" />
+
+        <ConfirmationModal v-model="showRejectModal" title="Reject Game"
+            message="Are you sure you want to reject this game? The submitter will be notified." confirm-text="Reject"
+            confirm-color="danger" :loading="updateLoading" @confirm="handleRejectGame"
+            @cancel="showRejectModal = false" />
     </div>
 </template>
 
 <script setup lang="ts">
 import { useGames } from '~/composables/useGames'
 import { useAuth } from '~/composables/useAuth'
+import ConfirmationModal from '~/components/ConfirmationModal.vue'
+import GameStatusBadge from '~/components/GameStatusBadge.vue'
 
 // Get the game ID from the route
 const route = useRoute()
@@ -92,16 +130,86 @@ useHead({
     title: 'Game Details - Ludika'
 })
 
-const { game, gameLoading, gameError, fetchGameById } = useGames()
-const { canEditGame } = useAuth()
+const { game, gameLoading, gameError, updateLoading, fetchGameById, updateGameStatus } = useGames()
+const { canEditGame, isPrivileged, user } = useAuth()
 
 const currentSlide = ref(0)
 const isClient = computed(() => import.meta.client)
+
+// Modal states
+const showSubmitModal = ref(false)
+const showApproveModal = ref(false)
+const showRejectModal = ref(false)
 
 const sortedImages = computed(() => {
     if (!game.value?.images) return []
     return [...game.value.images].sort((a, b) => a.position - b.position)
 })
+
+// Computed properties for button visibility
+const canSubmitGame = computed(() => {
+    return game.value?.status === 'draft' &&
+        user.value?.uuid === game.value?.proposing_user
+})
+
+const canApproveGame = computed(() => {
+    return isPrivileged() &&
+        game.value &&
+        (game.value.status === 'draft' || game.value.status === 'submitted')
+})
+
+const canRejectGame = computed(() => {
+    return isPrivileged() &&
+        game.value &&
+        (game.value.status === 'draft' || game.value.status === 'submitted')
+})
+
+// Status update handlers
+const handleSubmitGame = async () => {
+    if (!game.value?.id) return
+
+    try {
+        await updateGameStatus(game.value.id, 'submitted')
+        showSubmitModal.value = false
+        // Refresh the page to show updated status
+        await refreshPage()
+    } catch (error) {
+        console.error('Failed to submit game:', error)
+        showSubmitModal.value = false
+    }
+}
+
+const handleApproveGame = async () => {
+    if (!game.value?.id) return
+
+    try {
+        await updateGameStatus(game.value.id, 'approved')
+        showApproveModal.value = false
+        await refreshPage()
+    } catch (error) {
+        console.error('Failed to approve game:', error)
+        showApproveModal.value = false
+    }
+}
+
+const handleRejectGame = async () => {
+    if (!game.value?.id) return
+
+    try {
+        await updateGameStatus(game.value.id, 'rejected')
+        showRejectModal.value = false
+        await refreshPage()
+    } catch (error) {
+        console.error('Failed to reject game:', error)
+        showRejectModal.value = false
+    }
+}
+
+const refreshPage = async () => {
+    if (gameId) {
+        await fetchGameById(gameId)
+    }
+}
 
 onMounted(() => {
     if (gameId) {
@@ -174,6 +282,12 @@ watch(game, (newGame) => {
     color: #374151;
     margin: 0;
     text-align: center;
+}
+
+.title-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .edit-button {
@@ -256,6 +370,60 @@ watch(game, (newGame) => {
 }
 
 .review-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+/* Status Action Buttons */
+.submit-button,
+.approve-button,
+.reject-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.submit-button {
+    background-color: #3b82f6;
+}
+
+.submit-button:hover {
+    background-color: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.approve-button {
+    background-color: #10b981;
+}
+
+.approve-button:hover {
+    background-color: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.reject-button {
+    background-color: #ef4444;
+}
+
+.reject-button:hover {
+    background-color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.action-icon {
     width: 1.25rem;
     height: 1.25rem;
 }

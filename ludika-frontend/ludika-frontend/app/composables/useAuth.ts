@@ -28,7 +28,6 @@ export const useAuth = () => {
     const initializeAuth = () => {
         if (import.meta.client) {
             const storedToken = localStorage.getItem(AUTH_TOKEN_KEY)
-            console.log('Stored token:', storedToken)
             if (storedToken) {
                 globalState.token = storedToken
                 globalState.isAuthenticated = true

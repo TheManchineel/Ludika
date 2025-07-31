@@ -20,4 +20,18 @@ export interface GamePublic {
   images: readonly GameImage[]
   status: string
   proposing_user: string | null
+}
+
+export interface GameCreate {
+  name: string
+  description: string
+  url: string
+  tags: number[]
+}
+
+export interface GameUpdate {
+  name?: string
+  description?: string
+  url?: string
+  tags?: number[]
 } 

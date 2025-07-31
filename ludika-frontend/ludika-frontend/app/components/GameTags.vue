@@ -24,7 +24,7 @@
     <div class="game-tags">
         <VaChip v-for="tag in displayTags" :key="tag.id" :color="'primary'" :size="size" class="game-tag">
             <div class="tag-content">
-                <VaIcon v-if="tag.icon" :name="tag.icon" class="tag-icon" />
+                <font-awesome-icon v-if="tag.icon" :icon="tag.icon" class="tag-icon" />
                 <span class="tag-name">{{ tag.name }}</span>
             </div>
         </VaChip>

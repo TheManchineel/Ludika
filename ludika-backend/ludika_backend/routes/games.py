@@ -19,7 +19,7 @@ from ludika_backend.models.games import (
 from ludika_backend.models.users import User
 
 from ludika_backend.utils.db import get_session
-from sqlmodel import Session, select, or_
+from sqlmodel import Session, func, select, or_
 from ludika_backend.utils.image_ops import (
     add_game_image_last,
     overwrite_game_image,
@@ -39,33 +39,51 @@ async def get_games(
     search: str | None = None,
     tags: str | None = None,
     db_session: Session = Depends(get_session),
+    response: Response = Response(),
 ) -> list[GamePublic]:
     """Retrieve a list of all approved games with pagination, tag filtering and search."""
 
-    statement = select(Game).where(or_(Game.status == GameStatus.APPROVED.value))
+    statement = select(Game)
+    count_statement = select(func.count(Game.id))
+
+    statement, count_statement = map(
+        lambda x: x.where(or_(Game.status == GameStatus.APPROVED.value)),
+        (statement, count_statement),
+    )
 
     if tags:
         try:
             tag_ids = [int(tag.strip()) for tag in tags.split(",")]
-            statement = statement.where(Game.tags.any(Tag.id.in_(tag_ids)))
+            statement, count_statement = map(
+                lambda x: x.where(Game.tags.any(Tag.id.in_(tag_ids))),
+                (statement, count_statement),
+            )
         except ValueError:
             raise HTTPException(
-                status_code=400, detail="Invalid tags format (must be a comma-separated list of integers)"
+                status_code=400,
+                detail="Invalid tags format (must be a comma-separated list of integers)",
             )
 
     if search:
-        statement = statement.where(
-            or_(
-                Game.name.ilike(f"%{search}%"),
-                Game.description.ilike(f"%{search}%"),
-                Game.tags.any(Tag.name.ilike(f"%{search}%")),
-            )
+        statement, count_statement = (
+            map(
+                lambda x: x.where(
+                    or_(
+                        Game.name.ilike(f"%{search}%"),
+                        Game.description.ilike(f"%{search}%"),
+                        Game.tags.any(Tag.name.ilike(f"%{search}%")),
+                    )
+                )
+            ),
+            (statement, count_statement),
         )
 
+    total_count = db_session.exec(count_statement).first()
     statement = statement.offset(page * limit).limit(limit)
 
     results = db_session.exec(statement)
     games = results.all()
+    response.headers["X-Total-Count"] = str(total_count)
     return games
 
 
@@ -75,11 +93,22 @@ async def get_my_games(
     limit: int = 50,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
+    response: Response = Response(),
 ) -> list[GamePublic]:
     """Get games created by the current user."""
-    statement = select(Game).where(Game.proposing_user == current_user.uuid).offset(page * limit).limit(limit)
+    statement = select(Game)
+    count_statement = select(func.count(Game.id))
+
+    statement, count_statement = map(
+        lambda x: x.where(Game.proposing_user == current_user.uuid),
+        (statement, count_statement),
+    )
+
+    statement = statement.offset(page * limit).limit(limit)
     results = db_session.exec(statement)
+    total_count = db_session.exec(count_statement).first()
     games = results.all()
+    response.headers["X-Total-Count"] = str(total_count)
     return games
 
 
@@ -87,16 +116,41 @@ async def get_my_games(
 async def get_games_waiting_for_approval(
     page: int = 0,
     limit: int = 50,
+    search: str | None = None,
     db_session: Session = Depends(get_session),
     current_user: User = Security(get_current_user),
+    response: Response = Response(),
 ) -> list[GamePublic]:
     """Get games waiting for approval (privileged users only)."""
     if not current_user.is_privileged():
         raise HTTPException(status_code=403, detail="You do not have permission to view this.")
 
-    statement = select(Game).where(Game.status == GameStatus.SUBMITTED.value).offset(page * limit).limit(limit)
+    statement = select(Game)
+    count_statement = select(func.count(Game.id))
+
+    statement, count_statement = map(
+        lambda x: x.where(Game.status == GameStatus.SUBMITTED.value),
+        (statement, count_statement),
+    )
+
+    if search:
+        statement, count_statement = map(
+            lambda x: x.where(
+                or_(
+                    Game.name.ilike(f"%{search}%"),
+                    Game.description.ilike(f"%{search}%"),
+                    Game.tags.any(Tag.name.ilike(f"%{search}%")),
+                )
+            ),
+            (statement, count_statement),
+        )
+
+    total_count = db_session.exec(count_statement).first()
+    statement = statement.offset(page * limit).limit(limit)
+
     results = db_session.exec(statement)
     games = results.all()
+    response.headers["X-Total-Count"] = str(total_count)
     return games
 
 
@@ -109,7 +163,7 @@ async def get_game(
     """Retrieve a game by its ID."""
     statement = select(Game).where(Game.id == game_id)
     if current_user:
-        if not current_user.is_privileged:
+        if not current_user.is_privileged():
             statement = statement.where(
                 or_(
                     Game.proposing_user == current_user.uuid,
