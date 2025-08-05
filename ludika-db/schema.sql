@@ -102,3 +102,33 @@ CREATE TABLE IF NOT EXISTS CriterionWeight (
     weight FLOAT CHECK (weight >= 0),
     PRIMARY KEY (profile_id, criterion_id)
 );
+
+-- MCDA view
+CREATE VIEW GameMCDAView AS
+WITH AverageRatings AS (
+    SELECT
+        rr.game_id,
+        rr.criterion_id,
+        AVG(rr.score)::FLOAT AS avg_score
+    FROM ReviewRating rr
+    GROUP BY rr.game_id, rr.criterion_id
+),
+WeightedScores AS (
+    SELECT
+        ar.game_id,
+        cw.profile_id,
+        ar.criterion_id,
+        ar.avg_score,
+        cw.weight,
+        ar.avg_score * cw.weight AS weighted_score
+    FROM AverageRatings ar
+    JOIN CriterionWeight cw ON ar.criterion_id = cw.criterion_id
+)
+SELECT
+    g.id AS id,
+    g.name AS name,
+    ws.profile_id AS profile_id,
+    SUM(ws.weighted_score) AS total_score
+FROM WeightedScores ws
+JOIN Game g ON g.id = ws.game_id AND g.status = 'approved'
+GROUP BY id, name, profile_id;

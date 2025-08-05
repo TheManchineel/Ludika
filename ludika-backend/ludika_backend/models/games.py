@@ -33,11 +33,6 @@ class GameBase(SQLModel):
     Represents a game in the system.
     """
 
-    class Config:
-        """Make the JSON array in the `images` field compatible with SQLAlchemy"""
-
-        arbitrary_types_allowed = True
-
     name: str
     description: str | None
     url: str
@@ -138,3 +133,19 @@ class TagCreate(TagBase):
 class TagUpdate(SQLModel):
     name: str | None = None
     icon: str | None = None
+
+
+class GameRanked(SQLModel, table=True):
+    """
+    Represents a database view for the MCDA algorithm.
+    """
+
+    __tablename__ = "gamemcdaview"
+    id: int = Field(primary_key=True)
+    name: str
+    profile_id: int = Field(primary_key=True)
+    total_score: float
+
+
+class GameRankedPublic(GamePublic):
+    total_score: float
