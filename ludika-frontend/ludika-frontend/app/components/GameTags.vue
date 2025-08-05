@@ -41,6 +41,9 @@
 
 .game-tag {
     font-size: 0.75rem;
+    min-height: 2rem;
+    display: flex;
+    align-items: center;
 }
 
 .tag-content {

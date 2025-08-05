@@ -223,4 +223,19 @@ onMounted(() => {
     gap: 2rem;
     padding: 1rem 0;
 }
+
+/* White [+Add Tag] button */
+:deep(.add-tag-chip) {
+    border-color: white !important;
+    color: white !important;
+}
+
+:deep(.add-tag-chip .tag-content) {
+    color: white !important;
+}
+
+:deep(.add-tag-chip .tag-icon),
+:deep(.add-tag-chip .tag-name) {
+    color: white !important;
+}
 </style>

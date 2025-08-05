@@ -37,7 +37,7 @@
                     </svg>
                     Visit Game
                 </a>
-                <NuxtLink :to="`${game.id}/review`" class="review-button">
+                <NuxtLink v-if="isAuthenticated" :to="`${game.id}/review`" class="review-button">
                     <svg class="review-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -90,6 +90,10 @@
                     <p>No images available for this game</p>
                 </div>
             </div>
+
+            <!-- Reviews Section -->
+            <GameReviews :reviews="game.reviews" :user-review="isAuthenticated ? userReview : null" :game-id="gameId"
+                @refresh="refreshPage" />
         </div>
 
         <div v-else-if="!gameLoading && !game && isClient" class="not-found-state">
@@ -120,6 +124,7 @@ import { useGames } from '~/composables/useGames'
 import { useAuth } from '~/composables/useAuth'
 import ConfirmationModal from '~/components/ConfirmationModal.vue'
 import GameStatusBadge from '~/components/GameStatusBadge.vue'
+import GameReviews from '~/components/GameReviews.vue'
 
 // Get the game ID from the route
 const route = useRoute()
@@ -130,8 +135,8 @@ useHead({
     title: 'Game Details - Ludika'
 })
 
-const { game, gameLoading, gameError, updateLoading, fetchGameById, updateGameStatus } = useGames()
-const { canEditGame, isPrivileged, user } = useAuth()
+const { game, gameLoading, gameError, userReview, userReviewLoading, userReviewError, updateLoading, fetchGameById, fetchUserReview, updateGameStatus } = useGames()
+const { canEditGame, isPrivileged, user, isAuthenticated } = useAuth()
 
 const currentSlide = ref(0)
 const isClient = computed(() => import.meta.client)
@@ -208,18 +213,27 @@ const handleRejectGame = async () => {
 const refreshPage = async () => {
     if (gameId) {
         await fetchGameById(gameId)
+        if (isAuthenticated.value) {
+            await fetchUserReview(gameId)
+        }
     }
 }
 
 onMounted(() => {
     if (gameId) {
         fetchGameById(gameId)
+        if (isAuthenticated.value) {
+            fetchUserReview(gameId)
+        }
     }
 })
 
 watch(() => route.params.id, (newId) => {
     if (newId) {
         fetchGameById(newId as string)
+        if (isAuthenticated.value) {
+            fetchUserReview(newId as string)
+        }
     }
 })
 
@@ -228,6 +242,14 @@ watch(game, (newGame) => {
         useHead({
             title: `${newGame.name} - Ludika`
         })
+    }
+})
+
+// Watch authentication state to fetch user review when user logs in
+watch(isAuthenticated, (newAuthState) => {
+    if (gameId && newAuthState) {
+        // User logged in, fetch their review
+        fetchUserReview(gameId)
     }
 })
 </script>

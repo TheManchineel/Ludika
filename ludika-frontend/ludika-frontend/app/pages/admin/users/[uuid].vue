@@ -7,10 +7,46 @@ definePageMeta({
 })
 
 const route = useRoute()
-const { isAdmin, isContentModerator } = useAuth()
-const { user, userLoading, userError, fetchUserById } = useUsers()
+const { isAdmin, isContentModerator, user: currentUser } = useAuth()
+const { user, userLoading, userError, fetchUserById, updateUser } = useUsers()
 
 const userUuid = route.params.uuid as string
+
+// Check if viewing current user
+const isCurrentUser = computed(() => {
+    return currentUser.value?.uuid === userUuid
+})
+
+// Role options for dropdown - using the enum directly from the import
+const roleOptions = [
+    { value: 'user', text: 'User' },
+    { value: 'content_moderator', text: 'Content Moderator' },
+    { value: 'platform_administrator', text: 'Platform Administrator' }
+]
+
+// Handle role change
+const handleRoleChange = async (newRole: string) => {
+    if (!user.value || isCurrentUser.value) return
+
+    try {
+        await updateUser(userUuid, { user_role: newRole })
+    } catch (error) {
+        console.error('Failed to update user role:', error)
+        // Could add toast notification here
+    }
+}
+
+// Handle enabled/disabled toggle
+const handleEnabledChange = async (enabled: boolean) => {
+    if (!user.value || isCurrentUser.value) return
+
+    try {
+        await updateUser(userUuid, { enabled })
+    } catch (error) {
+        console.error('Failed to update user status:', error)
+        // Could add toast notification here
+    }
+}
 
 // Redirect if not privileged user
 onMounted(() => {
@@ -36,7 +72,7 @@ onMounted(() => {
         <!-- Header -->
         <div class="edit-user-header">
             <h1 class="edit-user-title">Edit User</h1>
-            <p class="edit-user-subtitle">Modify user account information and permissions</p>
+            <p class="edit-user-subtitle">Modify user account status and permissions</p>
         </div>
 
         <!-- Content -->
@@ -59,11 +95,6 @@ onMounted(() => {
                         Editing: {{ user.visible_name }}
                     </VaCardTitle>
                     <VaCardContent>
-                        <VaAlert color="info" title="Coming Soon" closeable>
-                            User editing functionality will be implemented in a future update.
-                            For now, you can view user information and use the other admin tools.
-                        </VaAlert>
-
                         <div class="user-info">
                             <h3>Current User Information</h3>
                             <VaList>
@@ -84,15 +115,18 @@ onMounted(() => {
                                 <VaListItem>
                                     <VaListItemSection>
                                         <VaListItemLabel>Role</VaListItemLabel>
-                                        <VaListItemLabel caption>{{ user.user_role }}</VaListItemLabel>
+                                        <VaSelect v-model="user.user_role" :options="roleOptions"
+                                            :disabled="isCurrentUser" @update:model-value="handleRoleChange"
+                                            value-by="value" text-by="text" class="role-select" />
                                     </VaListItemSection>
                                 </VaListItem>
 
                                 <VaListItem>
                                     <VaListItemSection>
                                         <VaListItemLabel>Status</VaListItemLabel>
-                                        <VaListItemLabel caption>{{ user.enabled ? 'Active' : 'Disabled' }}
-                                        </VaListItemLabel>
+                                        <VaSwitch v-model="user.enabled" :disabled="isCurrentUser"
+                                            @update:model-value="handleEnabledChange"
+                                            :label="user.enabled ? 'Active' : 'Disabled'" class="status-switch" />
                                     </VaListItemSection>
                                 </VaListItem>
 
@@ -194,6 +228,15 @@ onMounted(() => {
     gap: 1rem;
     justify-content: flex-end;
     margin-top: 2rem;
+}
+
+.role-select {
+    margin-top: 0.5rem;
+    max-width: 300px;
+}
+
+.status-switch {
+    margin-top: 0.5rem;
 }
 
 @media (max-width: 768px) {

@@ -72,6 +72,35 @@ export const useUsers = () => {
     // SSR-safe version
     const deleteUser = withSSRCheck(_deleteUser)
 
+    const _updateUser = async (uuid: string, updates: Partial<{ user_role: string; enabled: boolean }>): Promise<void> => {
+        try {
+            const response = await authenticatedFetch<UserPublic>(`/api/v1/users/${uuid}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updates)
+            })
+
+            // Update the local user data if this is the currently loaded user
+            if (user.value && user.value.uuid === uuid) {
+                user.value = response
+            }
+
+            // Update the user in the users array if it exists
+            const userIndex = users.value.findIndex(u => u.uuid === uuid)
+            if (userIndex !== -1) {
+                users.value[userIndex] = response
+            }
+        } catch (err) {
+            console.error('Error updating user:', err)
+            throw err
+        }
+    }
+
+    // SSR-safe version
+    const updateUser = withSSRCheck(_updateUser)
+
     return {
         users: readonly(users),
         user: readonly(user),
@@ -83,6 +112,7 @@ export const useUsers = () => {
         deleteError: readonly(deleteError),
         fetchUsers,
         fetchUserById,
-        deleteUser
+        deleteUser,
+        updateUser
     }
 }

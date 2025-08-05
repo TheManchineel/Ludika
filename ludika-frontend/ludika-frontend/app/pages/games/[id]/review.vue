@@ -2,52 +2,209 @@
     <div class="review-page">
         <div class="review-content">
             <h1 class="review-title">
-                Review Game
+                {{ isEditing ? 'Edit Review' : 'Review Game' }}
             </h1>
 
-            <div class="placeholder-message">
-                <div class="placeholder-content">
-                    <svg class="placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z">
-                        </path>
-                    </svg>
-                    <h2>Review Feature Coming Soon</h2>
-                    <p>This page will allow you to review and rate games.</p>
-                    <p class="game-id">Game ID: {{ gameId }}</p>
+            <!-- Loading State -->
+            <div v-if="userReviewLoading || reviewCriteriaLoading" class="loading-state">
+                <VaProgressCircle indeterminate color="primary" />
+                <div class="loading-text">Loading review data...</div>
+            </div>
 
-                    <div class="back-button-section">
-                        <NuxtLink :to="`/games/${gameId}`" class="back-button">
-                            <svg class="back-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
-                            Back to Game
-                        </NuxtLink>
+            <!-- Error State -->
+            <div v-else-if="userReviewError || reviewCriteriaError" class="error-state">
+                <div class="error-text">Failed to load review data. Please try again.</div>
+            </div>
+
+            <!-- Review Form -->
+            <form v-else @submit.prevent="handleSubmit" class="review-form">
+                <!-- Review Text Section -->
+                <div class="form-section">
+                    <label for="reviewText" class="form-label">
+                        <font-awesome-icon icon="comment" class="label-icon" />
+                        Your Review
+                    </label>
+                    <textarea id="reviewText" v-model="reviewText" placeholder="Share your thoughts about this game..."
+                        class="review-textarea" rows="6" required></textarea>
+                </div>
+
+                <!-- Ratings Section -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <div class="section-label">
+                            <font-awesome-icon icon="star" class="label-icon" />
+                            Rating Criteria
+                        </div>
+                        <div class="section-subtitle">Rate different aspects of the game</div>
+                    </div>
+
+                    <div class="ratings-grid">
+                        <!-- Existing Rating Cards -->
+                        <RatingCriteriaCard v-for="rating in selectedRatings" :key="rating.criterion.id"
+                            :criterion="rating.criterion" v-model="rating.score"
+                            @remove="removeCriterion(rating.criterion.id)" />
+
+                        <!-- Add Rating Card -->
+                        <AddRatingCard :available-criteria="availableCriteria" @select="addCriterion" />
                     </div>
                 </div>
-            </div>
+
+                <!-- Action Buttons -->
+                <div class="form-actions">
+                    <div class="left-actions">
+                        <VaButton v-if="isEditing" preset="plain" color="danger" @click="showDeleteModal = true"
+                            :disabled="updateLoading">
+                            <font-awesome-icon icon="trash" class="action-icon" />
+                            Delete Review
+                        </VaButton>
+                    </div>
+                    <div class="right-actions">
+                        <VaButton preset="secondary" @click="$router.push(`/games/${gameId}`)"
+                            :disabled="updateLoading">
+                            Cancel
+                        </VaButton>
+                        <VaButton type="submit" :loading="updateLoading" :disabled="!reviewText.trim()">
+                            {{ isEditing ? 'Update Review' : 'Submit Review' }}
+                        </VaButton>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Delete Confirmation Modal -->
+            <ConfirmationModal v-model="showDeleteModal" title="Delete Review"
+                message="Are you sure you want to delete this review? This action cannot be undone."
+                confirm-text="Delete" confirm-color="danger" :loading="updateLoading" @confirm="handleDeleteReview"
+                @cancel="showDeleteModal = false" />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
+import type { ReviewCriterion } from '../../../types/game'
+import { useGames } from '~/composables/useGames'
+import RatingCriteriaCard from '~/components/RatingCriteriaCard.vue'
+import AddRatingCard from '~/components/AddRatingCard.vue'
+import ConfirmationModal from '~/components/ConfirmationModal.vue'
+
 // Get the game ID from the route
 const route = useRoute()
+const router = useRouter()
 const gameId = route.params.id as string
 
 // Set up page metadata
 useHead({
     title: `Review Game ${gameId} - Ludika`
 })
+
+const {
+    userReview,
+    userReviewLoading,
+    userReviewError,
+    reviewCriteria,
+    reviewCriteriaLoading,
+    reviewCriteriaError,
+    updateLoading,
+    updateError,
+    fetchUserReview,
+    fetchReviewCriteria,
+    submitReview,
+    deleteReview
+} = useGames()
+
+// Form state
+const reviewText = ref('')
+const selectedRatings = ref<{ criterion: ReviewCriterion; score: number }[]>([])
+const showDeleteModal = ref(false)
+
+// Computed properties
+const isEditing = computed(() => !!userReview.value)
+
+const availableCriteria = computed(() => {
+    const usedCriteriaIds = selectedRatings.value.map(r => r.criterion.id)
+    return reviewCriteria.value.filter(criterion => !usedCriteriaIds.includes(criterion.id))
+})
+
+// Methods
+const addCriterion = (criterion: ReviewCriterion) => {
+    selectedRatings.value.push({
+        criterion,
+        score: 5 // Default to 5 stars
+    })
+}
+
+const removeCriterion = (criterionId: number) => {
+    const index = selectedRatings.value.findIndex(r => r.criterion.id === criterionId)
+    if (index !== -1) {
+        selectedRatings.value.splice(index, 1)
+    }
+}
+
+const populateForm = () => {
+    if (userReview.value) {
+        reviewText.value = userReview.value.review_text
+
+        // Populate ratings
+        selectedRatings.value = userReview.value.ratings.map(rating => ({
+            criterion: rating.criterion,
+            score: rating.score
+        }))
+    }
+}
+
+const handleSubmit = async () => {
+    try {
+        const reviewData = {
+            review_text: reviewText.value.trim(),
+            ratings: selectedRatings.value.map(rating => ({
+                score: rating.score,
+                criterion_id: rating.criterion.id
+            }))
+        }
+
+        await submitReview(gameId, reviewData)
+
+        // Navigate back to game page
+        router.push(`/games/${gameId}`)
+    } catch (error) {
+        console.error('Failed to submit review:', error)
+    }
+}
+
+const handleDeleteReview = async () => {
+    try {
+        await deleteReview(gameId)
+        showDeleteModal.value = false
+
+        // Navigate back to game page
+        router.push(`/games/${gameId}`)
+    } catch (error) {
+        console.error('Failed to delete review:', error)
+        showDeleteModal.value = false
+    }
+}
+
+// Initialize data
+onMounted(async () => {
+    // Fetch review criteria and user's existing review
+    await Promise.all([
+        fetchReviewCriteria(),
+        fetchUserReview(gameId)
+    ])
+
+    // Populate form if editing existing review
+    populateForm()
+})
+
+// Watch for changes in userReview to handle async loading
+watch(userReview, () => {
+    populateForm()
+}, { immediate: true })
 </script>
 
 <style scoped>
 .review-page {
     padding: 2rem;
-    max-width: 800px;
+    max-width: 1000px;
     margin: 0 auto;
 }
 
@@ -63,74 +220,136 @@ useHead({
     text-align: center;
 }
 
-.placeholder-message {
-    text-align: center;
+.loading-state,
+.error-state {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    gap: 1rem;
+}
+
+.loading-text,
+.error-text {
+    font-size: 1.125rem;
     color: #6b7280;
+}
+
+.review-form {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.form-section {
     margin-bottom: 2rem;
 }
 
-.placeholder-content {
-    padding: 3rem;
-    background-color: #f9fafb;
-    border-radius: 1rem;
-    border: 2px dashed #d1d5db;
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.75rem;
 }
 
-.placeholder-icon {
-    width: 4rem;
-    height: 4rem;
-    margin: 0 auto 1.5rem;
+.label-icon {
     color: #10b981;
 }
 
-.placeholder-content h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 1rem;
-}
-
-.placeholder-content p {
-    font-size: 1.125rem;
-    margin-bottom: 0.5rem;
-}
-
-.game-id {
-    font-family: monospace;
-    background-color: #e5e7eb;
-    padding: 0.5rem 1rem;
+.review-textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid #e5e7eb;
     border-radius: 0.5rem;
-    display: inline-block;
-    margin-top: 1rem !important;
-    color: #374151 !important;
+    font-size: 1rem;
+    line-height: 1.6;
+    resize: vertical;
+    transition: border-color 0.2s ease-in-out;
 }
 
-.back-button-section {
-    margin-top: 2rem;
+.review-textarea:focus {
+    outline: none;
+    border-color: #10b981;
 }
 
-.back-button {
-    display: inline-flex;
+.section-header {
+    margin-bottom: 1.5rem;
+}
+
+.section-label {
+    display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background-color: #6b7280;
-    color: white;
-    text-decoration: none;
-    border-radius: 0.5rem;
+    font-size: 1.125rem;
     font-weight: 600;
-    transition: all 0.2s ease-in-out;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    color: #374151;
+    margin-bottom: 0.25rem;
 }
 
-.back-button:hover {
-    background-color: #4b5563;
-    transform: translateY(-1px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+.section-subtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
 }
 
-.back-icon {
-    width: 1.25rem;
-    height: 1.25rem;
+.ratings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.left-actions {
+    display: flex;
+}
+
+.right-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.action-icon {
+    margin-right: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .review-page {
+        padding: 1rem;
+    }
+
+    .review-title {
+        font-size: 2rem;
+    }
+
+    .ratings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .right-actions {
+        flex-direction: column-reverse;
+        width: 100%;
+    }
+
+    .left-actions {
+        order: 2;
+    }
+
+    .right-actions {
+        order: 1;
+    }
 }
 </style>

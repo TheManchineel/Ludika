@@ -53,7 +53,7 @@ class Game(GameBase, table=True):
     created_at: datetime = Field(default=None)
     updated_at: datetime = Field(default=None)
     images: list["GameImage"] = Relationship(back_populates="game")
-    reviews: list["Review"] = Relationship(back_populates="game")
+    reviews: list["Review"] = Relationship(back_populates="game", cascade_delete=True)
 
     def is_visible_by(self, user) -> bool:
         if user is None:

@@ -133,6 +133,9 @@ const removeTag = (tagId: number) => {
 
 .game-tag {
     font-size: 0.75rem;
+    min-height: 2rem;
+    display: flex;
+    align-items: center;
 }
 
 .removable-tag {
@@ -152,6 +155,9 @@ const removeTag = (tagId: number) => {
     cursor: pointer;
     border: 2px dashed;
     background-color: transparent !important;
+    min-height: 2rem;
+    display: flex;
+    align-items: center;
 }
 
 .add-tag-chip:hover {
