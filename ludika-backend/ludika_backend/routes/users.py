@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.params import Security
+from ludika_backend.models.games import Game
+from ludika_backend.utils.image_ops import delete_all_user_images
 from sqlmodel import Session, select
 from uuid import UUID
 
@@ -121,3 +123,23 @@ async def delete_user(
     db_session.delete(user)
     db_session.commit()
     return {"detail": "User deleted."}
+
+
+@user_router.delete("/{user_id}/games")
+async def delete_user_games(
+    user_id: UUID,
+    db_session: Session = Depends(get_session),
+    current_user: User = Security(get_current_user),
+):
+    """Delete all games created by a user (moderators and admins only)."""
+    if not current_user.is_privileged():
+        raise HTTPException(status_code=403, detail="You do not have permission to delete games.")
+    user = db_session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    delete_all_user_images(db_session, user_id)
+    games = db_session.exec(select(Game).where(Game.proposing_user == user_id)).all()
+    for game in games:
+        db_session.delete(game)
+    db_session.commit()
+    return {"detail": f"{len(games)} games deleted."}

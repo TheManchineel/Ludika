@@ -56,5 +56,10 @@ def login(
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    access_token = create_access_token(data={"sub": str(user.uuid)})
+    now = datetime.now(timezone.utc)
+    user.last_login = now
+    session.add(user)
+    session.commit()
+    access_token = create_access_token(data={"sub": str(user.uuid)}, start_time=now)
+
     return AuthToken(access_token=access_token)

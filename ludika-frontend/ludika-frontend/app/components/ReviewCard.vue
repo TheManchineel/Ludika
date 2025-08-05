@@ -1,9 +1,7 @@
 <template>
     <div :class="['review-item', { 'my-review-item': isMyReview }]">
         <div class="review-header">
-            <VaAvatar :color="getAvatarColor(review.author.visible_name)" size="large" class="review-avatar">
-                {{ getInitials(review.author.visible_name) }}
-            </VaAvatar>
+            <UserAvatar :name="review.author.visible_name" size="large" class="review-avatar" />
             <div class="review-author-info">
                 <div class="author-name">
                     {{ review.author.visible_name }}
@@ -69,20 +67,7 @@ const emit = defineEmits<Emits>()
 const { isPrivileged } = useAuth()
 const showDeleteModal = ref(false)
 
-const getInitials = (name: string): string => {
-    return name
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase())
-        .slice(0, 2)
-        .join('')
-}
 
-const getAvatarColor = (name: string): string => {
-    // Generate a consistent color based on the name
-    const colors = ['primary', 'secondary', 'success', 'info', 'warning', 'danger'] as const
-    const index = name.length % colors.length
-    return colors[index]
-}
 
 const formatRole = (role: string): string => {
     return role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())

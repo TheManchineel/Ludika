@@ -23,9 +23,9 @@ OAUTH2_LOGIN_URL = "/api/v1/auth/login"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=OAUTH2_LOGIN_URL)
 oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=OAUTH2_LOGIN_URL, auto_error=False)
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_access_token(data: dict, start_time: datetime, expires_delta: timedelta | None = None):
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (
+    expire = start_time + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     to_encode.update({"exp": expire})
@@ -86,4 +86,4 @@ def get_current_user_optional(
             raise credentials_exception
         return user
     except JWTError:
-        raise credentials_exception
+        return None

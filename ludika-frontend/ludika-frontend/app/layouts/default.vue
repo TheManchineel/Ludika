@@ -23,6 +23,12 @@ onMounted(() => {
         </template>
         <template #right>
           <div class="navbar-content">
+            <VaNavbarItem class="navbar-item-padded">
+              <VaButton @click="navigateTo('/rank-games')" preset="secondary" class="rank-games-button">
+                <font-awesome-icon icon="chart-line" class="button-icon" />
+                <span class="button-text">Rank Games</span>
+              </VaButton>
+            </VaNavbarItem>
 
             <VaNavbarItem class="navbar-item-padded">
               <UserMenu />
@@ -78,5 +84,24 @@ onMounted(() => {
 
 .app-main {
   flex: 1;
+}
+
+.rank-games-button {
+  flex-shrink: 0;
+}
+
+.button-icon {
+  margin-right: 0.5rem;
+}
+
+.button-text {
+  display: none;
+}
+
+/* Show text on larger screens */
+@media (min-width: 640px) {
+  .button-text {
+    display: inline;
+  }
 }
 </style>

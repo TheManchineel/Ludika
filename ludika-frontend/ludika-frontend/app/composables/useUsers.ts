@@ -49,6 +49,24 @@ export const useUsers = () => {
     // SSR-safe version
     const fetchUserById = withSSRCheck(_fetchUserById)
 
+    const _fetchCurrentUser = async () => {
+        userLoading.value = true
+        userError.value = null
+
+        try {
+            const response = await authenticatedFetch<UserPublic>('/api/v1/users/me')
+            user.value = response
+        } catch (err) {
+            userError.value = 'Failed to fetch current user'
+            console.error('Error fetching current user:', err)
+        } finally {
+            userLoading.value = false
+        }
+    }
+
+    // SSR-safe version
+    const fetchCurrentUser = withSSRCheck(_fetchCurrentUser)
+
     const _deleteUser = async (uuid: string): Promise<void> => {
         deleteLoading.value = true
         deleteError.value = null
@@ -69,8 +87,23 @@ export const useUsers = () => {
         }
     }
 
-    // SSR-safe version
-    const deleteUser = withSSRCheck(_deleteUser)
+
+    const _deleteUserGames = async (uuid: string): Promise<void> => {
+        deleteLoading.value = true
+        deleteError.value = null
+
+        try {
+            await authenticatedFetch(`/api/v1/users/${uuid}/games`, {
+                method: 'DELETE'
+            })
+        } catch (err) {
+            deleteError.value = 'Failed to delete user games'
+            console.error('Error deleting user games:', err)
+            throw err
+        } finally {
+            deleteLoading.value = false
+        }
+    }
 
     const _updateUser = async (uuid: string, updates: Partial<{ user_role: string; enabled: boolean }>): Promise<void> => {
         try {
@@ -98,7 +131,8 @@ export const useUsers = () => {
         }
     }
 
-    // SSR-safe version
+    const deleteUser = withSSRCheck(_deleteUser)
+    const deleteUserGames = withSSRCheck(_deleteUserGames)
     const updateUser = withSSRCheck(_updateUser)
 
     return {
@@ -112,7 +146,9 @@ export const useUsers = () => {
         deleteError: readonly(deleteError),
         fetchUsers,
         fetchUserById,
+        fetchCurrentUser,
         deleteUser,
-        updateUser
+        updateUser,
+        deleteUserGames
     }
 }

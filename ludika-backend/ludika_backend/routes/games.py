@@ -6,6 +6,7 @@ from fastapi import UploadFile, File, Response
 import os
 
 from ludika_backend.controllers.auth import get_current_user, get_current_user_optional
+from ludika_backend.models import CriterionWeightProfile
 from ludika_backend.models.games import (
     Game,
     GamePublic,
@@ -374,12 +375,17 @@ async def delete_game_image(
 async def get_ranked_games(
     profile_id: int,
     db_session: Session = Depends(get_session),
+    current_user: User | None = Security(get_current_user_optional),
 ) -> list[GameRankedPublic]:
     """Get ranked games for a given profile."""
-    # Get ranked games with scores from the optimized view
+    profile = db_session.exec(select(CriterionWeightProfile).where(CriterionWeightProfile.id == profile_id)).first()
+    if (not profile) or (not profile.is_global and (not current_user or not current_user.uuid == profile.user_id)):
+        raise HTTPException(status_code=404, detail="Profile not found")
+
     ranked_statement = (
         select(GameRanked.id, GameRanked.total_score)
         .where(GameRanked.profile_id == profile_id)
+        .where(GameRanked.total_score > 0)
         .order_by(GameRanked.total_score.desc())
     )
     ranked_results = db_session.exec(ranked_statement).all()
@@ -387,20 +393,16 @@ async def get_ranked_games(
     if not ranked_results:
         return []
 
-    # Extract game IDs and create score mapping
     game_ids = [result.id for result in ranked_results]
     score_map = {result.id: result.total_score for result in ranked_results}
 
-    # Get full Game objects with tags and images loaded
     games_statement = select(Game).options(joinedload(Game.tags), joinedload(Game.images)).where(Game.id.in_(game_ids))
     games = db_session.exec(games_statement).unique().all()
 
-    # Create game lookup for efficient access
     game_map = {game.id: game for game in games}
 
-    # Build results in the same order as ranked results
     return [
         GameRankedPublic.model_validate(game_map[game_id], update={"total_score": score_map[game_id]})
         for game_id in game_ids
-        if game_id in game_map  # Safety check in case game was deleted
+        if game_id in game_map
     ]

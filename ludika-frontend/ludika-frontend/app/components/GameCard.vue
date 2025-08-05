@@ -15,6 +15,11 @@ const imageUrl = computed(() => {
   if (!firstImage.value) return null
   return `/static/${firstImage.value.image}`
 })
+
+const formattedScore = computed(() => {
+  if (props.game.total_score === undefined) return null
+  return `Score: ${props.game.total_score.toFixed(2)}`
+})
 </script>
 
 <template>
@@ -23,9 +28,15 @@ const imageUrl = computed(() => {
       <div class="game-image-container">
         <div v-if="imageUrl" class="game-image">
           <NuxtImg :src="imageUrl" :alt="game.name" class="game-image-img" loading="lazy" />
+          <div v-if="formattedScore" class="score-overlay">
+            {{ formattedScore }}
+          </div>
         </div>
         <div v-else class="game-image-placeholder">
           <VaIcon name="image" size="large" />
+          <div v-if="formattedScore" class="score-overlay">
+            {{ formattedScore }}
+          </div>
         </div>
       </div>
 
@@ -66,6 +77,7 @@ const imageUrl = computed(() => {
 .game-image-container {
   flex: 1;
   min-height: 0;
+  position: relative;
 }
 
 .game-image {
@@ -108,5 +120,19 @@ const imageUrl = computed(() => {
 
 .game-card-tags {
   min-height: 2.5rem;
+}
+
+.score-overlay {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background-color: var(--va-info);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  z-index: 10;
 }
 </style>

@@ -1,8 +1,8 @@
 import os
-from uuid import uuid4
+from uuid import uuid4, UUID
 from PIL import Image
 from sqlmodel import select, Session
-from ludika_backend.models.games import GameImage
+from ludika_backend.models.games import Game, GameImage
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "static")
 
@@ -10,9 +10,7 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "sta
 def add_game_image_last(db_session: Session, game_id: int, file) -> str:
     """Add an image as the last image for a game."""
     last_image = db_session.exec(
-        select(GameImage)
-        .where(GameImage.game_id == game_id)
-        .order_by(GameImage.position.desc())
+        select(GameImage).where(GameImage.game_id == game_id).order_by(GameImage.position.desc())
     ).first()
     position = (last_image.position + 1) if last_image else 0
     img_uuid = str(uuid4()) + ".webp"
@@ -32,9 +30,7 @@ def add_game_image_last(db_session: Session, game_id: int, file) -> str:
 def overwrite_game_image(db_session: Session, game_id: int, position: int, file) -> str:
     """Replace an image at a given position for a game. Deletes the old file."""
     image_record = db_session.exec(
-        select(GameImage).where(
-            GameImage.game_id == game_id, GameImage.position == position
-        )
+        select(GameImage).where(GameImage.game_id == game_id, GameImage.position == position)
     ).first()
     if not image_record:
         return None
@@ -59,9 +55,7 @@ def overwrite_game_image(db_session: Session, game_id: int, position: int, file)
 def delete_image_from_game(db_session: Session, game_id: int, position: int) -> bool:
     """Delete an image at a given position for a game and remove the file."""
     image_record = db_session.exec(
-        select(GameImage).where(
-            GameImage.game_id == game_id, GameImage.position == position
-        )
+        select(GameImage).where(GameImage.game_id == game_id, GameImage.position == position)
     ).first()
     if not image_record:
         return False
@@ -75,11 +69,25 @@ def delete_image_from_game(db_session: Session, game_id: int, position: int) -> 
 
 def delete_all_game_images(db_session: Session, game_id: int) -> int:
     """Delete all images for a game and remove their files. Returns number deleted."""
-    images = db_session.exec(
-        select(GameImage).where(GameImage.game_id == game_id)
-    ).all()
+    images = db_session.exec(select(GameImage).where(GameImage.game_id == game_id)).all()
     count = 0
     for img in images:
+        file_path = os.path.join(STATIC_DIR, img.image)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+        db_session.delete(img)
+        count += 1
+    db_session.commit()
+    return count
+
+
+def delete_all_user_images(db_session: Session, user_id: UUID) -> int:
+    """Delete all images for games created by the user and remove their files. Returns number deleted."""
+    images = db_session.exec(
+        select(GameImage, Game).where(GameImage.game_id == Game.id, Game.proposing_user == user_id)
+    ).all()
+    count = 0
+    for img, _ in images:
         file_path = os.path.join(STATIC_DIR, img.image)
         if os.path.isfile(file_path):
             os.remove(file_path)

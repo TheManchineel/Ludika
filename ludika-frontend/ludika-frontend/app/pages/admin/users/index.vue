@@ -9,7 +9,7 @@ definePageMeta({
 })
 
 const { isAdmin, isContentModerator, user: currentUser } = useAuth()
-const { users, loading, error, fetchUsers, deleteUser, deleteLoading } = useUsers()
+const { users, loading, error, fetchUsers, deleteUser, deleteLoading, deleteUserGames } = useUsers()
 
 // Redirect if not privileged user
 onMounted(() => {
@@ -48,11 +48,18 @@ const getStatusText = (enabled: boolean) => {
 }
 
 const showConfirmDeleteModal = ref(false)
+const showConfirmDeleteGamesModal = ref(false)
+
 const userToDelete = ref<UserPublic | null>(null)
 
 const confirmDelete = (user: UserPublic) => {
     userToDelete.value = user
     showConfirmDeleteModal.value = true
+}
+
+const confirmDeleteGames = (user: UserPublic) => {
+    userToDelete.value = user
+    showConfirmDeleteGamesModal.value = true
 }
 
 const handleDelete = async () => {
@@ -67,7 +74,17 @@ const handleDelete = async () => {
     }
 }
 
-
+const handleDeleteGames = async () => {
+    if (userToDelete.value) {
+        try {
+            await deleteUserGames(userToDelete.value.uuid)
+            showConfirmDeleteGamesModal.value = false
+            userToDelete.value = null
+        } catch (error) {
+            console.error('Failed to delete games:', error)
+        }
+    }
+}
 
 const canDeleteUser = (user: UserPublic) => {
     // Don't allow deletion of current user
@@ -85,6 +102,11 @@ const getDropdownActions = (user: UserPublic) => {
             text: 'View Profile',
             icon: 'visibility',
             action: () => navigateTo(`/users/${user.uuid}`)
+        },
+        {
+            text: 'Delete Games',
+            icon: 'backspace',
+            action: () => confirmDeleteGames(user)
         }
     ]
 
@@ -183,6 +205,12 @@ const getDropdownActions = (user: UserPublic) => {
             warning-message="This action cannot be undone." confirm-text="Delete User" confirm-color="danger"
             :loading="deleteLoading" @confirm="handleDelete"
             @cancel="showConfirmDeleteModal = false; userToDelete = null" />
+
+        <ConfirmationModal v-model="showConfirmDeleteGamesModal" title="Confirm Game Deletion"
+            :message="`Are you sure you want to delete all games created by ${userToDelete?.visible_name}?`"
+            warning-message="This action cannot be undone. They will be gone forever (a long time!)."
+            confirm-text="Delete Games" confirm-color="danger" :loading="deleteLoading" @confirm="handleDeleteGames"
+            @cancel="showConfirmDeleteGamesModal = false; userToDelete = null" />
     </div>
 </template>
 

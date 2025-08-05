@@ -51,6 +51,7 @@ export interface GamePublic {
   status: string
   proposing_user: string | null
   reviews?: readonly GameReview[]
+  total_score?: number
 }
 
 export interface GameCreate {

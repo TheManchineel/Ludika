@@ -46,7 +46,7 @@ def _handle_profile_weights(
 
     if (
         db_profile.is_global
-        and current_user.user_role != UserRole.PLATFORM_ADMINISTRATOR
+        and not current_user.user_role.is_privileged()
     ):
         raise HTTPException(
             status_code=403, detail="Only admins can modify global profiles."
@@ -188,9 +188,9 @@ async def create_profile(
     current_user: User = Security(get_current_user),
 ) -> CriterionWeightProfilePublic:
     """Create a new criterion weight profile."""
-    if profile.is_global and current_user.user_role != UserRole.PLATFORM_ADMINISTRATOR:
+    if profile.is_global and not current_user.is_privileged():
         raise HTTPException(
-            status_code=403, detail="Only admins can create global profiles."
+            status_code=403, detail="Only moderators can create global profiles."
         )
 
     weights = profile.weights
@@ -211,6 +211,21 @@ async def create_profile(
     db_session.refresh(db_profile)
     return db_profile
 
+@review_router.get("/profiles/{profile_id}")
+async def get_profile(
+    profile_id: int,
+    db_session: Session = Depends(get_session),
+    current_user: User | None = Security(get_current_user_optional),
+) -> CriterionWeightProfilePublic:
+    """Get a criterion weight profile."""
+    db_profile = db_session.get(CriterionWeightProfile, profile_id)
+
+    if not db_profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    if not (db_profile.is_global or current_user.is_privileged() or db_profile.user_id == current_user.uuid):
+        raise HTTPException(status_code=403, detail="You do not have access to this profile.")
+
+    return db_profile
 
 @review_router.patch("/profiles/{profile_id}")
 async def update_profile(
@@ -224,8 +239,8 @@ async def update_profile(
     if not db_profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     if (
-        db_profile.is_global
-        and current_user.user_role != UserRole.PLATFORM_ADMINISTRATOR
+        (db_profile.is_global or update.is_global)
+        and not current_user.is_privileged()
     ):
         raise HTTPException(
             status_code=403, detail="Only admins can update global profiles."
@@ -257,10 +272,10 @@ async def delete_profile(
         raise HTTPException(status_code=404, detail="Profile not found")
     if (
         db_profile.is_global
-        and current_user.user_role != UserRole.PLATFORM_ADMINISTRATOR
+        and not current_user.is_privileged()
     ):
         raise HTTPException(
-            status_code=403, detail="Only admins can delete global profiles."
+            status_code=403, detail="Only moderators can delete global profiles."
         )
     if not db_profile.is_global and db_profile.user_id != current_user.uuid:
         raise HTTPException(status_code=403, detail="You do not own this profile.")

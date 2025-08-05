@@ -13,11 +13,14 @@ const handleLogout = () => {
   <div class="user-menu">
     <VaDropdown v-if="isAuthenticated && user" placement="bottom-end">
       <template #anchor>
-        <VaButton preset="secondary" icon="person" :text="user.visible_name" class="user-button" />
+        <VaButton preset="secondary" :text="user.visible_name" class="user-button">
+          <UserAvatar :name="user.visible_name" size="small" class="button-avatar" />
+        </VaButton>
       </template>
 
       <VaDropdownContent class="user-dropdown">
         <div class="user-info">
+          <UserAvatar :name="user.visible_name" size="medium" class="dropdown-avatar" />
           <div class="user-name">{{ user.visible_name }}</div>
           <div class="user-role">{{ getUserRoleDisplayName(user.user_role) }}</div>
         </div>
@@ -27,7 +30,7 @@ const handleLogout = () => {
         <VaList>
           <VaListItem clickable @click="navigateTo('/create-game')">
             <VaListItemSection avatar>
-              <VaIcon name="add_circle" />
+              <font-awesome-icon icon="plus-circle" />
             </VaListItemSection>
             <VaListItemSection>
               <VaListItemLabel>Create Game</VaListItemLabel>
@@ -36,7 +39,7 @@ const handleLogout = () => {
 
           <VaListItem clickable @click="navigateTo('/my-games')">
             <VaListItemSection avatar>
-              <VaIcon name="games" />
+              <font-awesome-icon icon="gamepad" />
             </VaListItemSection>
             <VaListItemSection>
               <VaListItemLabel>My Games</VaListItemLabel>
@@ -45,7 +48,7 @@ const handleLogout = () => {
 
           <VaListItem v-if="isAdmin()" clickable @click="navigateTo('/admin')">
             <VaListItemSection avatar>
-              <VaIcon name="admin_panel_settings" />
+              <font-awesome-icon icon="cog" />
             </VaListItemSection>
             <VaListItemSection>
               <VaListItemLabel>Admin Panel</VaListItemLabel>
@@ -54,7 +57,7 @@ const handleLogout = () => {
 
           <VaListItem clickable @click="navigateTo('/profile')">
             <VaListItemSection avatar>
-              <VaIcon name="account_circle" />
+              <font-awesome-icon icon="user-circle" />
             </VaListItemSection>
             <VaListItemSection>
               <VaListItemLabel>Profile</VaListItemLabel>
@@ -63,7 +66,7 @@ const handleLogout = () => {
 
           <VaListItem clickable @click="handleLogout">
             <VaListItemSection avatar>
-              <VaIcon name="logout" />
+              <font-awesome-icon icon="sign-out-alt" />
             </VaListItemSection>
             <VaListItemSection>
               <VaListItemLabel>Sign Out</VaListItemLabel>
@@ -73,7 +76,8 @@ const handleLogout = () => {
       </VaDropdownContent>
     </VaDropdown>
 
-    <VaButton v-else @click="navigateTo('/login')" icon="login" class="login-button">
+    <VaButton v-else @click="navigateTo('/login')" class="login-button">
+      <font-awesome-icon icon="sign-in-alt" class="button-icon" />
       <span class="login-text">Sign In</span>
     </VaButton>
   </div>
@@ -96,6 +100,14 @@ const handleLogout = () => {
 .user-info {
   padding: 1rem;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dropdown-avatar {
+  margin-bottom: 0.25rem;
 }
 
 .user-name {
@@ -109,9 +121,15 @@ const handleLogout = () => {
   text-transform: capitalize;
 }
 
+.button-avatar {
+  margin-right: 0.5rem;
+}
+
 .login-button {
   flex-shrink: 0;
 }
+
+
 
 .login-text {
   display: none;
@@ -121,7 +139,6 @@ const handleLogout = () => {
 @media (min-width: 640px) {
   .login-text {
     display: inline;
-    margin-left: 0.5rem;
   }
 }
 </style>
