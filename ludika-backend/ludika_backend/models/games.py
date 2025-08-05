@@ -143,6 +143,12 @@ class GameRanked(SQLModel, table=True):
     __tablename__ = "gamemcdaview"
     id: int = Field(primary_key=True)
     name: str
+    description: str | None
+    url: str
+    created_at: datetime
+    updated_at: datetime
+    status: GameStatus = make_enum_field(GameStatus)
+    proposing_user: UUID | None
     profile_id: int = Field(primary_key=True)
     total_score: float
 

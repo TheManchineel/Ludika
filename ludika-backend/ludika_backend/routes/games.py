@@ -376,17 +376,31 @@ async def get_ranked_games(
     db_session: Session = Depends(get_session),
 ) -> list[GameRankedPublic]:
     """Get ranked games for a given profile."""
-    statement = (
-        select(GameRanked, Game)
+    # Get ranked games with scores from the optimized view
+    ranked_statement = (
+        select(GameRanked.id, GameRanked.total_score)
         .where(GameRanked.profile_id == profile_id)
         .order_by(GameRanked.total_score.desc())
-        .join_from(GameRanked, Game, Game.id == GameRanked.id)
     )
-    results = db_session.exec(statement)
-    result_list = results.all()
+    ranked_results = db_session.exec(ranked_statement).all()
 
-    results_joined = [
-        GameRankedPublic.model_validate(res[1], update={"total_score": res[0].total_score}) for res in result_list
+    if not ranked_results:
+        return []
+
+    # Extract game IDs and create score mapping
+    game_ids = [result.id for result in ranked_results]
+    score_map = {result.id: result.total_score for result in ranked_results}
+
+    # Get full Game objects with tags and images loaded
+    games_statement = select(Game).options(joinedload(Game.tags), joinedload(Game.images)).where(Game.id.in_(game_ids))
+    games = db_session.exec(games_statement).unique().all()
+
+    # Create game lookup for efficient access
+    game_map = {game.id: game for game in games}
+
+    # Build results in the same order as ranked results
+    return [
+        GameRankedPublic.model_validate(game_map[game_id], update={"total_score": score_map[game_id]})
+        for game_id in game_ids
+        if game_id in game_map  # Safety check in case game was deleted
     ]
-
-    return results_joined

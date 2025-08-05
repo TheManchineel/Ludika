@@ -127,8 +127,14 @@ WeightedScores AS (
 SELECT
     g.id AS id,
     g.name AS name,
+    g.description AS description,
+    g.url AS url,
+    g.created_at AS created_at,
+    g.updated_at AS updated_at,
+    g.status AS status,
+    g.proposing_user AS proposing_user,
     ws.profile_id AS profile_id,
     SUM(ws.weighted_score) AS total_score
 FROM WeightedScores ws
 JOIN Game g ON g.id = ws.game_id AND g.status = 'approved'
-GROUP BY id, name, profile_id;
+GROUP BY g.id, g.name, g.description, g.url, g.created_at, g.updated_at, g.status, g.proposing_user, ws.profile_id;
