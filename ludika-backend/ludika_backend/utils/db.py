@@ -1,3 +1,4 @@
+import contextlib
 from enum import Enum
 
 from sqlmodel import create_engine, Session, Column, Field
@@ -44,6 +45,7 @@ def get_session():
     with Session(get_engine()) as session:
         yield session
 
+db_context = contextlib.contextmanager(get_session)
 
 def make_enum_field(enum_class: type[Enum], nullable: bool = False, default=None):
     return Field(

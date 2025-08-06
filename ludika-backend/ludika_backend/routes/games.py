@@ -224,7 +224,7 @@ async def create_game(
             "tags": tags,
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
-            "status": "draft",
+            "status": GameStatus.DRAFT.value,
         },
     )
     db_session.add(db_game)

@@ -26,4 +26,8 @@ dependencies = [
     "argon2-cffi>=25.1.0",
     "python-multipart>=0.0.20",
     "pillow>=11.3.0",
+    "langchain[google-genai]>=0.3.27",
+    "langchain-tavily>=0.2.11",
+    "langchain-community>=0.3.27",
+    "wikipedia>=1.4.0",
 ]

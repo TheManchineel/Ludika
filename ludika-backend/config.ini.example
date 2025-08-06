@@ -8,3 +8,9 @@ port=5432
 [Authentication]
 secret_key=RANDOM_KEY_FOR_JWT_SIGNING
 access_token_expire_minutes=30
+
+[GenerativeAI]
+model=gemini-2.0
+ai_user_id=61443bc0-52c8-49a8-a237-66ce0cdda549
+gemini_api_key=XXXXXXXXXXXXXXXXXXXXX
+tavily_api_key=XXXXXXXXXXXXXXXXXXXXX
