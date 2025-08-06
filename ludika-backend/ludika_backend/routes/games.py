@@ -24,7 +24,7 @@ from ludika_backend.models.users import User
 from ludika_backend.utils.db import get_session
 from sqlalchemy.orm import joinedload
 from sqlmodel import Session, func, select, or_
-from ludika_backend.utils.image_ops import (
+from ludika_backend.controllers.image_ops import (
     add_game_image_last,
     overwrite_game_image,
     delete_image_from_game,

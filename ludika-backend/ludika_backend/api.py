@@ -5,7 +5,7 @@ from datetime import datetime
 from fastapi.staticfiles import StaticFiles
 
 # Import models module to trigger model rebuilding
-from ludika_backend.controllers.ai import ai_test_router
+from ludika_backend.routes.ai import ai_router
 from ludika_backend.routes.auth import auth_router
 from ludika_backend.routes.games import game_router
 from ludika_backend.routes.review import review_router
@@ -45,6 +45,6 @@ app.include_router(tag_router, prefix="/tags")
 app.include_router(user_router, prefix="/users")
 app.include_router(review_router, prefix="/reviews")
 app.include_router(auth_router, prefix="/auth")
-app.include_router(ai_test_router, prefix="/ai")  # we live in 2077
+app.include_router(ai_router, prefix="/ai")  # we live in 2077
 
 app.mount("/static", StaticFiles(directory="./static"), name="static")

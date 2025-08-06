@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.params import Security
 from ludika_backend.models.games import Game
-from ludika_backend.utils.image_ops import delete_all_user_images
+from ludika_backend.controllers.image_ops import delete_all_user_images
 from sqlmodel import Session, select
 from uuid import UUID
 
