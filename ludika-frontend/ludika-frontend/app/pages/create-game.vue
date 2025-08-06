@@ -12,16 +12,13 @@ import type { GamePublic } from '~~/types/game'
 import { useAuth } from '~/composables/useAuth'
 import GameFormEditor from '~/components/GameFormEditor.vue'
 
-// Set up auth
 const { isAuthenticated } = useAuth()
 const router = useRouter()
 
-// Set up page metadata
 useHead({
     title: 'Create New Game - Ludika'
 })
 
-// Form event handlers
 const handleSuccess = (createdGame: GamePublic) => {
     // Navigate to the newly created game's page using the returned game ID
     router.push(`/games/${createdGame.id}`)
@@ -32,7 +29,6 @@ const handleCancel = () => {
     router.push('/')
 }
 
-// Redirect if not authenticated
 watch(isAuthenticated, (authenticated) => {
     if (!authenticated) {
         navigateTo('/login')

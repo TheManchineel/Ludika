@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 from langchain_community.tools import WikipediaQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
+from langchain_tavily import TavilySearch
 
 from langchain_core.tools import tool
 from sqlmodel import select
@@ -19,10 +20,44 @@ from ludika_backend.utils.config import get_config_value
 from ludika_backend.utils.db import db_context
 from ludika_backend.utils.logs import get_logger
 
+import os
 
 AI_USER_ID = UUID(get_config_value("GenerativeAI", "ai_user_id"))
+
+if os.getenv("TAVILY_API_KEY") is None:
+    if get_config_value("GenerativeAI", "tavily_api_key") is None:
+        raise ValueError("TAVILY_API_KEY is not set and tavily_api_key is not set in config.ini")
+    os.environ["TAVILY_API_KEY"] = get_config_value("GenerativeAI", "tavily_api_key")
+
 wikipedia_api_wrapper = WikipediaAPIWrapper()
-wikipedia_tool = WikipediaQueryRun(api_wrapper=wikipedia_api_wrapper)
+
+tavily_search_tool = TavilySearch(
+    max_results=5,
+    topic="general",
+    include_answer=False,
+)
+
+
+@tool(description="Search Wikipedia for information about a topic")
+def wikipedia_search(query: str) -> str:
+    """
+    Search Wikipedia for information about a topic.
+    Returns the content of the most relevant Wikipedia article, or a message if no results are found.
+    """
+    print(f"Searching Wikipedia for: {query}")
+    try:
+        # Use the Wikipedia API wrapper to search
+        result = wikipedia_api_wrapper.run(query)
+        if result and result.strip():
+            return result
+        else:
+            return (
+                f"No Wikipedia articles found for '{query}'. Try using a different search term or check the spelling."
+            )
+    except Exception as e:
+        get_logger().warning(f"Wikipedia search failed for query '{query}': {str(e)}")
+        return f"Unable to search Wikipedia for '{query}'. Error: {str(e)}"
+
 
 
 @tool(description="Get the list of current games in the database")
@@ -110,11 +145,13 @@ def create_game_with_fixed_url(fixed_url: str):
                 session.commit()
                 session.refresh(db_game)
 
-                # let's try to add an image
-                new_image = get_first_image_from_query(fixed_url)
-                if new_image:
-                    new_img_id = add_game_image_last(session, db_game.id, new_image)
-                    get_logger().info(f"Successfully added image {new_img_id} to game {db_game.id}")
+                try:
+                    new_image = get_first_image_from_query(db_game.name + " game")
+                    if new_image:
+                        new_img_id = add_game_image_last(session, db_game.id, new_image)
+                        get_logger().info(f"Successfully added image {new_img_id} to game {db_game.id}")
+                except Exception as e:
+                    get_logger().warning(f"Failed to add image to game {db_game.id}: {str(e)}")
 
                 return {
                     "success": True,
@@ -149,13 +186,23 @@ def generate_game_object_with_fixed_url(fixed_url: str):
     return generate_game_object_fixed
 
 
+@tool(description="Report that the requested game already exists in the database", return_direct=True)
+def game_exists() -> dict:
+    return {
+        "success": False,
+        "game_id": None,
+        "message": "Game already exists in the database",
+        "game": None,
+    }
+
+
 def get_tools_for_game_create(url: str):
     """Get tools for game creation with a fixed URL"""
     create_game_tool = create_game_with_fixed_url(url)
-    return [get_games, get_tags, create_game_tool, fetch_page_content, wikipedia_tool, game_exists]
+    return [get_games, get_tags, create_game_tool, fetch_page_content, wikipedia_search, tavily_search_tool, game_exists]
 
 
 def get_tools_for_object_generation(url: str):
     """Get tools for object generation with a fixed URL"""
     generate_game_object_tool = generate_game_object_with_fixed_url(url)
-    return [get_games, get_tags, generate_game_object_tool, fetch_page_content, wikipedia_tool]
+    return [get_games, get_tags, generate_game_object_tool, fetch_page_content, wikipedia_search, tavily_search_tool]

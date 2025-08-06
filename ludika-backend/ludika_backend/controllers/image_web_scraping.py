@@ -53,5 +53,14 @@ def get_first_image_from_query(search_query: str) -> BytesIO | None:
     """Get the first image from a search query."""
     image_links = get_image_links(search_query)
     if len(image_links) == 0:
+        get_logger().warning(f"No image links found for search query: {search_query}")
         return None
-    return _get_image_from_url(image_links[0])
+    while len(image_links) > 0:
+        image_url = image_links.pop(0)
+        try:
+            image = _get_image_from_url(image_url)
+            if image:
+                return image
+        except Exception as e:
+            get_logger().warning(f"Failed to get image from URL: {image_url}: {str(e)}")
+            continue

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useAuth, getUserRoleDisplayName } from '~/composables/useAuth'
 
-const { user, isAuthenticated, logout, isAdmin } = useAuth()
+const { user, isAuthenticated, logout, isPrivileged } = useAuth()
 
 const handleLogout = () => {
   logout()
@@ -46,12 +46,21 @@ const handleLogout = () => {
             </VaListItemSection>
           </VaListItem>
 
-          <VaListItem v-if="isAdmin()" clickable @click="navigateTo('/admin')">
+          <VaListItem v-if="isPrivileged()" clickable @click="navigateTo('/admin')">
             <VaListItemSection avatar>
               <font-awesome-icon icon="cog" />
             </VaListItemSection>
             <VaListItemSection>
               <VaListItemLabel>Admin Panel</VaListItemLabel>
+            </VaListItemSection>
+          </VaListItem>
+
+          <VaListItem v-if="isPrivileged()" clickable @click="navigateTo('/create-game-ai')">
+            <VaListItemSection avatar>
+              <font-awesome-icon icon="hand-sparkles" />
+            </VaListItemSection>
+            <VaListItemSection>
+              <VaListItemLabel>Create Games with AI</VaListItemLabel>
             </VaListItemSection>
           </VaListItem>
 
@@ -135,7 +144,6 @@ const handleLogout = () => {
   display: none;
 }
 
-/* Show text on larger screens */
 @media (min-width: 640px) {
   .login-text {
     display: inline;
