@@ -68,6 +68,8 @@ class User(UserBase, table=True):
             return True
         return False
 
+    # In the future, normal users might be allowed to use AI, but right now we only allow privileged ones to do so
+    can_use_ai = is_privileged
 
 class UserPublic(UserBase):
     """
