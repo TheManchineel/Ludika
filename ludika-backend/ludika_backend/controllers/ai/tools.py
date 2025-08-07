@@ -4,8 +4,8 @@ from uuid import UUID
 
 import requests
 from bs4 import BeautifulSoup
-from langchain_community.tools import WikipediaQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
+from langchain_community.document_loaders import RedditPostsLoader
 from langchain_tavily import TavilySearch
 
 from langchain_core.tools import tool
@@ -57,7 +57,6 @@ def wikipedia_search(query: str) -> str:
     except Exception as e:
         get_logger().warning(f"Wikipedia search failed for query '{query}': {str(e)}")
         return f"Unable to search Wikipedia for '{query}'. Error: {str(e)}"
-
 
 
 @tool(description="Get the list of current games in the database")
@@ -119,7 +118,10 @@ def fetch_page_content(url: str) -> str:
 def create_game_with_fixed_url(fixed_url: str):
     """Factory function that creates a create_game tool with a fixed URL"""
 
-    @tool(description="Create a new game in the database with the predetermined URL", return_direct=True)
+    @tool(
+        description="Create a new game in the database with the predetermined URL",
+        return_direct=True,
+    )
     def create_game_fixed(name: str, description: str, tags: Optional[list[int]] = None) -> dict:
         print(f"Creating game: {name}, {description}, {fixed_url}, tags: {tags}")
         try:
@@ -160,7 +162,12 @@ def create_game_with_fixed_url(fixed_url: str):
                     "game": GamePublic.model_validate(db_game),
                 }
         except Exception as e:
-            return {"success": False, "game_id": None, "message": f"Failed to create game: {str(e)}", "game": None}
+            return {
+                "success": False,
+                "game_id": None,
+                "message": f"Failed to create game: {str(e)}",
+                "game": None,
+            }
 
     return create_game_fixed
 
@@ -168,7 +175,10 @@ def create_game_with_fixed_url(fixed_url: str):
 def generate_game_object_with_fixed_url(fixed_url: str):
     """Factory function that creates a generate_game_object tool with a fixed URL"""
 
-    @tool(description="Generate a GameCreate object without saving to database", return_direct=True)
+    @tool(
+        description="Generate a GameCreate object without saving to database",
+        return_direct=True,
+    )
     def generate_game_object_fixed(name: str, description: str, tags: Optional[list[int]] = None) -> dict:
         """
         Generate a GameCreate object with the provided information without saving it to the database.
@@ -186,7 +196,10 @@ def generate_game_object_with_fixed_url(fixed_url: str):
     return generate_game_object_fixed
 
 
-@tool(description="Report that the requested game already exists in the database", return_direct=True)
+@tool(
+    description="Report that the requested game already exists in the database",
+    return_direct=True,
+)
 def game_exists() -> dict:
     return {
         "success": False,
@@ -199,10 +212,38 @@ def game_exists() -> dict:
 def get_tools_for_game_create(url: str):
     """Get tools for game creation with a fixed URL"""
     create_game_tool = create_game_with_fixed_url(url)
-    return [get_games, get_tags, create_game_tool, fetch_page_content, wikipedia_search, tavily_search_tool, game_exists]
+    return [
+        get_games,
+        get_tags,
+        create_game_tool,
+        fetch_page_content,
+        wikipedia_search,
+        tavily_search_tool,
+        game_exists,
+    ]
 
 
 def get_tools_for_object_generation(url: str):
     """Get tools for object generation with a fixed URL"""
     generate_game_object_tool = generate_game_object_with_fixed_url(url)
-    return [get_games, get_tags, generate_game_object_tool, fetch_page_content, wikipedia_search, tavily_search_tool]
+    return [
+        get_games,
+        get_tags,
+        generate_game_object_tool,
+        fetch_page_content,
+        wikipedia_search,
+        tavily_search_tool,
+    ]
+
+
+# REDDIT TOOLS
+
+reddit_loader = RedditPostsLoader(
+    client_id=get_config_value("GenerativeAI", "reddit_client_id"),
+    client_secret=get_config_value("GenerativeAI", "reddit_client_secret"),
+    user_agent="LudikaAI/0.1 by u/Absolute_Trust",
+    categories=["new", "top", "hot", "rising"],
+    search_queries=["gamebasedlearning", "educationalgames"],
+    mode="subreddit",
+    number_posts=50,
+)

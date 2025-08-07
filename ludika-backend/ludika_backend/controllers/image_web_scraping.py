@@ -41,6 +41,7 @@ def get_image_links(search_query: str) -> list[str]:
                         continue
     return image_links
 
+
 def _get_image_from_url(url: str) -> BytesIO | None:
     """Download an image from a URL and return it as a BytesIO object."""
     response = requests.get(url)
@@ -48,6 +49,7 @@ def _get_image_from_url(url: str) -> BytesIO | None:
         get_logger().error(f"Failed to get image from URL: {response.status_code} {response.text}")
         return None
     return BytesIO(response.content)
+
 
 def get_first_image_from_query(search_query: str) -> BytesIO | None:
     """Get the first image from a search query."""

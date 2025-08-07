@@ -6,6 +6,7 @@ from ludika_backend.models.games import Game, GameImage
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "static")
 
+
 def _write_image_to_disk(file):
     img_uuid = str(uuid4()) + ".webp"
     out_path = os.path.join(STATIC_DIR, img_uuid)
@@ -29,6 +30,7 @@ def add_game_image_last(db_session: Session, game_id: int, file) -> str:
     db_session.add(new_img)
     db_session.commit()
     return img_uuid
+
 
 def overwrite_game_image(db_session: Session, game_id: int, position: int, file) -> str:
     """Replace an image at a given position for a game. Deletes the old file."""
