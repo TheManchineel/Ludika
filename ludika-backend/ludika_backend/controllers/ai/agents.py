@@ -1,17 +1,23 @@
-from typing import Optional, List
+import json
+from typing import Optional
+from ludika_backend.controllers.reddit_scraping import RedditPost, get_top_posts
 from pydantic import BaseModel, Field
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import AgentExecutor, create_tool_calling_agent
-from langchain_core.runnables import RunnableParallel, RunnablePassthrough
-from google.ai.generativelanguage_v1beta.types import Tool as GenAITool
+from langchain_core.runnables import RunnableLambda
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.tools import tool
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
+from langchain_core.rate_limiters import InMemoryRateLimiter
 
-from ludika_backend.controllers.ai.prompts import get_prompt_for_game_create, get_prompt_for_object_generation
+from ludika_backend.controllers.ai.prompts import (
+    GAME_DETECTION_PROMPT,
+    get_prompt_for_game_create,
+    get_prompt_for_object_generation,
+)
 from ludika_backend.controllers.ai.tools import (
     get_tools_for_game_create,
     get_tools_for_object_generation,
-    reddit_loader,
+    tavily_search_tool,
 )
 from ludika_backend.models.games import GameCreate, GamePublic
 from ludika_backend.utils.config import get_config_value
@@ -21,7 +27,19 @@ import os
 from pydantic.functional_validators import field_validator
 
 
-# Pydantic models for structured responses
+rate_limiter_google = InMemoryRateLimiter(
+    requests_per_second=0.5,
+    check_every_n_seconds=0.1,
+    max_bucket_size=10,
+)
+
+rate_limiter_nvidia = InMemoryRateLimiter(
+    requests_per_second=0.5,
+    check_every_n_seconds=0.1,
+    max_bucket_size=10,
+)
+
+
 class GameCreationResponse(BaseModel):
     """Structured response for game creation operations"""
 
@@ -60,12 +78,17 @@ if os.getenv("GOOGLE_API_KEY") is None:
         raise ValueError("GOOGLE_API_KEY is not set and gemini_api_key is not set in config.ini")
     os.environ["GOOGLE_API_KEY"] = get_config_value("GenerativeAI", "gemini_api_key")
 
-MODEL_NAME = get_config_value("GenerativeAI", "model")
+if os.getenv("NVIDIA_API_KEY") is None:
+    if get_config_value("GenerativeAI", "nvidia_api_key") is None:
+        raise ValueError("NVIDIA_API_KEY is not set and nvidia_api_key is not set in config.ini")
+    os.environ["NVIDIA_API_KEY"] = get_config_value("GenerativeAI", "nvidia_api_key")
 
+PRIMARY_MODEL_NAME = get_config_value("GenerativeAI", "model")
+NVIDIA_MODEL_NAME = "meta/llama-3.1-405b-instruct"
 
-llm = ChatGoogleGenerativeAI(model=MODEL_NAME, temperature=0.1)
-tooled_llm = llm.bind_tools([GenAITool(google_search={})])
-
+google_llm = ChatGoogleGenerativeAI(model=PRIMARY_MODEL_NAME, temperature=0.1, rate_limiter=rate_limiter_google)
+nvidia_llm = ChatNVIDIA(model=NVIDIA_MODEL_NAME, rate_limiter=rate_limiter_nvidia)
+llm = nvidia_llm
 
 def create_agent_executor_for_game_create(url: str):
     """Create an agent executor for game creation with a fixed URL"""
@@ -73,7 +96,7 @@ def create_agent_executor_for_game_create(url: str):
     prompt = get_prompt_for_game_create(url)
 
     # Use the original tooled_llm since we're using return_direct=True in tools
-    agent = create_tool_calling_agent(tooled_llm, tools, prompt)
+    agent = create_tool_calling_agent(llm, tools, prompt)
     return AgentExecutor(agent=agent, tools=tools, verbose=True)
 
 
@@ -83,155 +106,60 @@ def create_agent_executor_for_object_generation(url: str):
     prompt = get_prompt_for_object_generation(url)
 
     # Use the original tooled_llm since we're using return_direct=True in tools
-    agent = create_tool_calling_agent(tooled_llm, tools, prompt)
+    agent = create_tool_calling_agent(llm, tools, prompt)
     return AgentExecutor(agent=agent, tools=tools, verbose=True)
 
 
-def create_educational_game_detection_agent():
-    """Create an agent that detects educational games in Reddit posts"""
-    prompt = ChatPromptTemplate.from_messages(
+class PossibleGameURLOutput(BaseModel):
+    url: str | None = Field(description="The URL of the possible game, or None if no game is found")
+
+    @field_validator("url")
+    def validate_url(cls, v):
+        if not v.startswith("https://") or not v.startswith("http://"):
+            get_logger().warning(f"Invalid URL: {v}, skipping")
+            return None
+        return v
+
+
+game_detection_agent = create_tool_calling_agent(
+    llm,
+    [tavily_search_tool],
+    prompt=ChatPromptTemplate.from_messages(
         [
-            (
-                "system",
-                """You are an AI assistant that analyzes Reddit posts to detect educational games.
-
-
-Your task is to:
-1. Read the Reddit post content
-2. Determine if the post contains or references an educational game
-3. If an educational game is found, extract its URL (must start with http:// or https://)
-4. If no educational game is found, return 'null'
-
-Educational games include:
-- Games designed for learning (math, science, language, etc.)
-- Educational apps and platforms
-- Learning games for children or adults
-- Games used in educational settings
-
-Return ONLY the URL if found, or 'null' if no educational game is referenced.""",
-            ),
-            ("human", "Analyze this Reddit post for educational games: {post_content}"),
+            ("system", GAME_DETECTION_PROMPT),
+            ("human", "The post is:\n\n{post_content}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ]
+    ),
+)
+
+game_detection_executor = AgentExecutor(agent=game_detection_agent, tools=[tavily_search_tool])
+
+
+class DetectionResult(BaseModel):
+    has_game_url: bool
+    url: Optional[str]
+
+
+def detect_and_process(post: RedditPost):
+    raw_detection = game_detection_executor.invoke(
+        {"post_content": f"{post.title}{'\n\n' + post.url if post.url else ''}\n\n{post.selftext}"}
     )
 
-    agent = create_tool_calling_agent(llm, [], prompt)
-    return AgentExecutor(agent=agent, tools=[], verbose=True)
+    detection = DetectionResult(**json.loads(raw_detection["output"]))
+
+    if detection.has_game_url and detection.url:
+        get_logger().info(f"Found game URL: {detection.url} for post: {post.title}")
+        executor = create_agent_executor_for_game_create(detection.url)
+        return executor.invoke({})
+
+    return {"skipped": True, "reason": "No game URL detected", "post_title": post.title}
 
 
-def validate_url_output(output: str) -> Optional[str]:
-    """Validate and parse the URL output from the educational game detection agent"""
-    if output is None or output.strip().lower() == "null":
-        return None
-
-    url = output.strip()
-    if url.startswith(("http://", "https://")):
-        return url
-    return None
+full_pipeline = RunnableLambda(detect_and_process)
 
 
-def create_reddit_processing_chain(batch_size: int = 10):
-    """Create a chain that processes Reddit posts to find educational games and generate game objects
-
-    Args:
-        batch_size: Number of posts to process in parallel per batch (default: 10)
-    """
-
-    # Create the educational game detection agent
-    detection_agent = create_educational_game_detection_agent(post)
-
-    # Load Reddit posts
-    def load_reddit_posts():
-        """Load Reddit posts using the reddit_loader"""
-        try:
-            posts = reddit_loader.load()
-            return [post.page_content for post in posts]
-        except Exception as e:
-            get_logger().error(f"Error loading Reddit posts: {e}")
-            return []
-
-    def detect_educational_games_parallel(posts: List[str]) -> List[Optional[str]]:
-        """Process posts in parallel to detect educational games and return URLs"""
-        if not posts:
-            return []
-
-        urls = []
-
-        for i in range(0, len(posts), batch_size):
-            batch = posts[i : i + batch_size]
-            get_logger().info(
-                f"Processing batch {i//batch_size + 1}/{(len(posts) + batch_size - 1)//batch_size} ({len(batch)} posts)"
-            )
-
-            detection_agents = {f"post_{j}": detection_agent for j in range(len(batch))}
-            inputs = {f"post_{j}": {"post_content": post} for j, post in enumerate(batch)}
-            parallel_detector = RunnableParallel(detection_agents)
-
-            try:
-                # Execute all detections in parallel for this batch
-                results = parallel_detector.invoke(inputs)
-
-                # Extract URLs from results
-                batch_urls = []
-                for j in range(len(batch)):
-                    result_key = f"post_{j}"
-                    if result_key in results:
-                        result = results[result_key]
-                        url = validate_url_output(result.get("output", ""))
-                        batch_urls.append(url)
-                    else:
-                        batch_urls.append(None)
-
-                urls.extend(batch_urls)
-
-            except Exception as e:
-                get_logger().warning(f"Error in parallel detection for batch {i//batch_size + 1}: {e}")
-        return urls
-
-    # Filter out None URLs and create game generation executors
-    def create_game_generators(urls: List[Optional[str]]) -> List[AgentExecutor]:
-        """Create agent executors for game generation from valid URLs"""
-        valid_urls = [url for url in urls if url is not None]
-        return [create_agent_executor_for_object_generation(url) for url in valid_urls]
-
-    # Execute all game generators in parallel
-    def generate_games(executors: List[AgentExecutor]) -> List[dict]:
-        """Execute all game generation agents in parallel"""
-        if not executors:
-            return []
-
-        # Create a parallel runnable
-        parallel_executor = RunnableParallel({f"game_{i}": executor for i, executor in enumerate(executors)})
-
-        try:
-            results = parallel_executor.invoke({})
-            return list(results.values())
-        except Exception as e:
-            get_logger().error(f"Error executing game generators: {e}")
-            return []
-
-    # Create the complete chain with parallel detection
-    chain = (
-        RunnablePassthrough.assign(posts=load_reddit_posts)
-        .assign(urls=lambda x: detect_educational_games_parallel(x["posts"]))
-        .assign(executors=lambda x: create_game_generators(x["urls"]))
-        .assign(games=lambda x: generate_games(x["executors"]))
-    )
-
-    return chain
-
-
-def run_reddit_processing_chain(batch_size: int = 10):
-    """Run the complete Reddit processing chain
-
-    Args:
-        batch_size: Number of posts to process in parallel per batch (default: 10)
-    """
-    chain = create_reddit_processing_chain(batch_size)
-    result = chain.invoke({})
-
-    get_logger().info(f"Processed {len(result.get('posts', []))} Reddit posts")
-    get_logger().info(f"Found {len([url for url in result.get('urls', []) if url is not None])} educational games")
-    get_logger().info(f"Generated {len(result.get('games', []))} game objects")
-
-    return result
+def run_full_reddit_pipeline():
+    posts = get_top_posts()
+    results = full_pipeline.batch(posts)
+    return results

@@ -66,3 +66,4 @@ def get_first_image_from_query(search_query: str) -> BytesIO | None:
         except Exception as e:
             get_logger().warning(f"Failed to get image from URL: {image_url}: {str(e)}")
             continue
+    return None

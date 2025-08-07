@@ -5,7 +5,6 @@ from uuid import UUID
 import requests
 from bs4 import BeautifulSoup
 from langchain_community.utilities import WikipediaAPIWrapper
-from langchain_community.document_loaders import RedditPostsLoader
 from langchain_tavily import TavilySearch
 
 from langchain_core.tools import tool
@@ -234,16 +233,3 @@ def get_tools_for_object_generation(url: str):
         wikipedia_search,
         tavily_search_tool,
     ]
-
-
-# REDDIT TOOLS
-
-reddit_loader = RedditPostsLoader(
-    client_id=get_config_value("GenerativeAI", "reddit_client_id"),
-    client_secret=get_config_value("GenerativeAI", "reddit_client_secret"),
-    user_agent="LudikaAI/0.1 by u/Absolute_Trust",
-    categories=["new", "top", "hot", "rising"],
-    search_queries=["gamebasedlearning", "educationalgames"],
-    mode="subreddit",
-    number_posts=50,
-)

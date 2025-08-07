@@ -34,4 +34,5 @@ dependencies = [
     "langchain-community>=0.3.27",
     "wikipedia>=1.4.0",
     "praw>=7.8.1",
+    "langchain-nvidia-ai-endpoints>=0.3.14",
 ]

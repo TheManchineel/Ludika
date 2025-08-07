@@ -18,7 +18,7 @@ You have access to tools to:
 
 When creating games, make sure to:
 1. First get the available tags
-2. Use `wikipedia_search`, `tavily_search_tool`, and `google_search` to find information about the game
+2. Use `wikipedia_search`, `tavily_search_tool` to find information about the game
 3. Choose appropriate tag IDs from the available tags
 4. Create the game with valid data
 
@@ -27,13 +27,13 @@ Always use the tools when asked to perform database operations.""",
             (
                 "human",
                 f"""Create a new game in the database for URL: {url}
-1. First, determine the name of the game based on this URL: {url}. You can also use the `tavily_search_tool`, `google_search` and `wikipedia_search` tools to find more information.
+1. First, determine the name of the game based on this URL: {url}. You can also use the `tavily_search_tool` and `wikipedia_search` tools to find more information.
 2. Check if the game already exists in the database with the `get_games` tool. If it does, stop and do not create a new game, but call the `game_exists` tool instead.
 3. If the game does not exist, use the `get_tags` tool to get a complete list of tags.
-4. Use `tavily_search`, `google_search` and `wikipedia_search` to find more information about the game and choose all the appropriate tags that apply. If you don't have enough information, stop and do not create a game.
+4. Use `tavily_search` and `wikipedia_search` to find more information about the game and choose all the appropriate tags that apply. If you don't have enough information, stop and do not create a game.
 5. If the game does not already exist in the database and you have enough information, use `create_game_fixed` to create a new game with:
     - name: the name of the game
-    - description: a short, concise description of the game (use `tavily_search`, `google_search` and `wikipedia_search` for more accurate info)
+    - description: a short, concise description of the game (use `tavily_search` and `wikipedia_search` for more accurate info)
     - tags: a list of tag IDs, which you selected in step 4
 
 The URL is already predetermined and will be saved automatically. The create_game_fixed tool will return the final result directly.""",
@@ -62,7 +62,7 @@ You have access to tools to:
 When generating a GameCreate object, make sure to:
 1. First get the available tags
 2. Use `fetch_page_content` to get detailed information about the game from the provided URL
-3. Use `wikipedia_search`, `tavily_search`, and `google_search` to find additional information about the game
+3. Use `wikipedia_search` and `tavily_search` to find additional information about the game
 4. Choose appropriate tag IDs from the available tags
 5. Generate a GameCreate object with valid data
 
@@ -72,13 +72,13 @@ Always use the tools when asked to perform operations.""",
                 "human",
                 f"""Generate a GameCreate object based on this URL: {url}. Follow these steps:
 1. First, use `fetch_page_content` to get information directly from the URL.
-2. Determine the name of the game from the page content. You can also use `tavily_search_tool`, `google_search` and `wikipedia_search` tools to find more information.
+2. Determine the name of the game from the page content. You can also use `tavily_search_tool` and `wikipedia_search` tools to find more information.
 3. Check if the game already exists in the database with the `get_games` tool. If it does, still continue to generate the object.
 4. Use the `get_tags` tool to get a complete list of available tags.
-5. Use `tavily_search_tool`, `google_search` and/or `wikipedia_search` to find more information about the game and choose all the appropriate tags that apply.
+5. Use `tavily_search_tool` and/or `wikipedia_search` to find more information about the game and choose all the appropriate tags that apply.
 6. Use `generate_game_object_fixed` to create a GameCreate object with:
     - name: the name of the game
-    - description: a comprehensive description of the game (use information from the web page, `tavily_search`, `google_search` and `wikipedia_search`)
+    - description: a comprehensive description of the game (use information from the web page, `tavily_search` and `wikipedia_search`)
     - tags: a list of tag IDs that you selected in step 5
 
 The URL is already predetermined and will be saved automatically. The generate_game_object_fixed tool will return the final result directly.""",
@@ -86,3 +86,18 @@ The URL is already predetermined and will be saved automatically. The generate_g
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ]
     )
+
+
+GAME_DETECTION_PROMPT = """You are an AI assistant that can analyze Reddit posts and determine if they contain or reference an educational game.
+When given a post, you will determine if the post contains or references an educational game. If so, using Tavily Search if necessary, find and return the CORRECT and RELEVANT URL of the game using the following JSON format:
+
+{{
+    "has_game_url": true,
+    "url": "https://example.com/game"
+}}
+
+where `has_game_url` is a boolean indicating if a game URL was found, and `url` is the URL of the game if found, or `null` if no game was found. Please try to find the most relevant URL, such as a website or a game store page, and not a forum post, video or comment.
+
+If you are unsure about whether the post refers to an educational game, you can use the `tavily_search_tool` to search the web for more information.
+If the post does not contain or reference an educational game, return {{"has_game_url": false, "url": null}}
+"""
