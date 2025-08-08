@@ -5,15 +5,18 @@ from .users import User, UserPublic
 from .review import Review, ReviewPublic, ReviewCriterion, CriterionWeightProfile
 
 # Rebuild models to resolve forward references (Python is a *****)
-Game.model_rebuild()
-GamePublic.model_rebuild()
-GameWithReviews.model_rebuild()
-Tag.model_rebuild()
+all_models = (
+    Game,
+    GamePublic,
+    GameWithReviews,
+    Tag,
+    User,
+    UserPublic,
+    Review,
+    ReviewPublic,
+    ReviewCriterion,
+    CriterionWeightProfile
+)
 
-User.model_rebuild()
-UserPublic.model_rebuild()
-
-Review.model_rebuild()
-ReviewPublic.model_rebuild()
-ReviewCriterion.model_rebuild()
-CriterionWeightProfile.model_rebuild()
+for model in all_models:
+    model.model_rebuild()

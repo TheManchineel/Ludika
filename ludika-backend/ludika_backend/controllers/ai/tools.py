@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Callable
 from uuid import UUID
 
 import requests
@@ -11,7 +11,7 @@ from langchain_core.tools import tool
 from sqlmodel import select
 
 from ludika_backend.controllers.image_ops import add_game_image_last
-from ludika_backend.controllers.image_web_scraping import get_first_image_from_query
+from ludika_backend.controllers.scraping.web_images import get_first_image_from_query
 
 from ludika_backend.models import GamePublic, Game, Tag
 from ludika_backend.models.games import GameCreate, GameStatus
@@ -114,7 +114,7 @@ def fetch_page_content(url: str) -> str:
         return f"Error parsing page: {str(e)}"
 
 
-def create_game_with_fixed_url(fixed_url: str):
+def create_game_with_fixed_url(fixed_url: str, game_added_callback: Callable | None = None):
     """Factory function that creates a create_game tool with a fixed URL"""
 
     @tool(
@@ -154,6 +154,8 @@ def create_game_with_fixed_url(fixed_url: str):
                 except Exception as e:
                     get_logger().warning(f"Failed to add image to game {db_game.id}: {str(e)}")
 
+                if game_added_callback:
+                    game_added_callback()
                 return {
                     "success": True,
                     "game_id": str(db_game.id),
@@ -208,9 +210,9 @@ def game_exists() -> dict:
     }
 
 
-def get_tools_for_game_create(url: str):
+def get_tools_for_game_create(url: str, game_added_callback: Callable | None = None):
     """Get tools for game creation with a fixed URL"""
-    create_game_tool = create_game_with_fixed_url(url)
+    create_game_tool = create_game_with_fixed_url(url, game_added_callback)
     return [
         get_games,
         get_tags,

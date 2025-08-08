@@ -2,7 +2,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 
 def get_prompt_for_game_create(url: str):
-    """Get prompt template for game creation with the URL embedded"""
+    """Get the prompt template for game creation with the URL embedded"""
     return ChatPromptTemplate.from_messages(
         [
             (
@@ -44,7 +44,7 @@ The URL is already predetermined and will be saved automatically. The create_gam
 
 
 def get_prompt_for_object_generation(url: str):
-    """Get prompt template for object generation with the URL embedded"""
+    """Get the prompt template for object generation with the URL embedded"""
     return ChatPromptTemplate.from_messages(
         [
             (

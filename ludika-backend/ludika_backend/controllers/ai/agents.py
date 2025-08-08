@@ -1,10 +1,6 @@
-import json
-from typing import Optional
-from ludika_backend.controllers.reddit_scraping import RedditPost, get_top_posts
+from typing import Optional, Callable
 from pydantic import BaseModel, Field
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import AgentExecutor, create_tool_calling_agent
-from langchain_core.runnables import RunnableLambda
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_core.rate_limiters import InMemoryRateLimiter
@@ -27,16 +23,10 @@ import os
 from pydantic.functional_validators import field_validator
 
 
-rate_limiter_google = InMemoryRateLimiter(
-    requests_per_second=0.5,
-    check_every_n_seconds=0.1,
-    max_bucket_size=10,
-)
-
 rate_limiter_nvidia = InMemoryRateLimiter(
-    requests_per_second=0.5,
+    requests_per_second=1.0,
     check_every_n_seconds=0.1,
-    max_bucket_size=10,
+    max_bucket_size=15,
 )
 
 
@@ -73,11 +63,6 @@ class EducationalGameURLResponse(BaseModel):
         return v
 
 
-if os.getenv("GOOGLE_API_KEY") is None:
-    if get_config_value("GenerativeAI", "gemini_api_key") is None:
-        raise ValueError("GOOGLE_API_KEY is not set and gemini_api_key is not set in config.ini")
-    os.environ["GOOGLE_API_KEY"] = get_config_value("GenerativeAI", "gemini_api_key")
-
 if os.getenv("NVIDIA_API_KEY") is None:
     if get_config_value("GenerativeAI", "nvidia_api_key") is None:
         raise ValueError("NVIDIA_API_KEY is not set and nvidia_api_key is not set in config.ini")
@@ -86,16 +71,13 @@ if os.getenv("NVIDIA_API_KEY") is None:
 PRIMARY_MODEL_NAME = get_config_value("GenerativeAI", "model")
 NVIDIA_MODEL_NAME = "meta/llama-3.1-405b-instruct"
 
-google_llm = ChatGoogleGenerativeAI(model=PRIMARY_MODEL_NAME, temperature=0.1, rate_limiter=rate_limiter_google)
-nvidia_llm = ChatNVIDIA(model=NVIDIA_MODEL_NAME, rate_limiter=rate_limiter_nvidia)
-llm = nvidia_llm
+llm = ChatNVIDIA(model=NVIDIA_MODEL_NAME, rate_limiter=rate_limiter_nvidia)
 
-def create_agent_executor_for_game_create(url: str):
+def create_agent_executor_for_game_create(url: str, game_added_callback: Callable | None = None):
     """Create an agent executor for game creation with a fixed URL"""
-    tools = get_tools_for_game_create(url)
+    tools = get_tools_for_game_create(url, game_added_callback)
     prompt = get_prompt_for_game_create(url)
 
-    # Use the original tooled_llm since we're using return_direct=True in tools
     agent = create_tool_calling_agent(llm, tools, prompt)
     return AgentExecutor(agent=agent, tools=tools, verbose=True)
 
@@ -105,7 +87,6 @@ def create_agent_executor_for_object_generation(url: str):
     tools = get_tools_for_object_generation(url)
     prompt = get_prompt_for_object_generation(url)
 
-    # Use the original tooled_llm since we're using return_direct=True in tools
     agent = create_tool_calling_agent(llm, tools, prompt)
     return AgentExecutor(agent=agent, tools=tools, verbose=True)
 
@@ -141,25 +122,3 @@ class DetectionResult(BaseModel):
     url: Optional[str]
 
 
-def detect_and_process(post: RedditPost):
-    raw_detection = game_detection_executor.invoke(
-        {"post_content": f"{post.title}{'\n\n' + post.url if post.url else ''}\n\n{post.selftext}"}
-    )
-
-    detection = DetectionResult(**json.loads(raw_detection["output"]))
-
-    if detection.has_game_url and detection.url:
-        get_logger().info(f"Found game URL: {detection.url} for post: {post.title}")
-        executor = create_agent_executor_for_game_create(detection.url)
-        return executor.invoke({})
-
-    return {"skipped": True, "reason": "No game URL detected", "post_title": post.title}
-
-
-full_pipeline = RunnableLambda(detect_and_process)
-
-
-def run_full_reddit_pipeline():
-    posts = get_top_posts()
-    results = full_pipeline.batch(posts)
-    return results

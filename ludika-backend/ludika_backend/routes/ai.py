@@ -3,11 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from ludika_backend.controllers.ai.agents import (
     create_agent_executor_for_game_create,
     create_agent_executor_for_object_generation,
-    run_full_reddit_pipeline,
 )
+from ludika_backend.controllers.ai.reddit_jobs import get_job_stats, start_job
 from ludika_backend.controllers.auth import get_current_user
 from ludika_backend.models import User
-from ludika_backend.controllers.reddit_scraping import get_top_posts
+from ludika_backend.controllers.scraping.reddit import get_top_posts
 
 
 ai_router = APIRouter()
@@ -45,29 +45,31 @@ def generate_game_object_from_url(
             status_code=403, detail="You do not have permission to use AI features."
         )
 
+@ai_router.get("/reddit-scraping")
+def get_reddit_scraping_session(current_user: User = Depends(get_current_user)):
+    """Get the current Reddit scraping status."""
+    if not current_user.can_use_ai():
+        raise HTTPException(
+            status_code=403, detail="You do not have permission to use AI features."
+        )
+    return get_job_stats()
 
-@ai_router.post("/add-games-from-reddit")
-def process_reddit_for_educational_games(
+@ai_router.post("/reddit-scraping")
+def create_reddit_scraping_session(
     current_user: User = Depends(get_current_user),
 ):
     """Process Reddit posts to find educational games and generate game objects automatically."""
-
     if not current_user.can_use_ai():
         raise HTTPException(
             status_code=403, detail="You do not have permission to use AI features."
         )
 
-    try:
-        run_full_reddit_pipeline()
-        return {
-            "success": True,
-        }
-    except Exception as e:
+    if start_job():
+        return get_job_stats()
+    else:
         raise HTTPException(
-            status_code=500,
-            detail=f"An error occurred while processing Reddit posts: {str(e)}",
+            status_code=400, detail="Reddit scraping is already in progress."
         )
-
 
 @ai_router.get("/test-reddit-fetch")
 def test_reddit_loader(current_user: User = Depends(get_current_user)):
