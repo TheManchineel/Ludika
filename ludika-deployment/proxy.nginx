@@ -27,19 +27,19 @@ server {
         proxy_set_header      X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header      Host $http_host;
 
-        location /api/v1/ {
+        location /api/v1 {
             proxy_pass        http://fastapi/;
             proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header  Host $http_host;
 
-            location /api/v1/static/ {
+            location /api/v1/static {
                 deny          all;
                 return        404;
             }
         }
-    }
 
-    location /static/ {
-        root                  /var/www/ludika-data/static;
+        location /static {
+            root              /var/www/ludika-data/static;
+        }
     }
 }
