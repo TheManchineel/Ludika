@@ -1,19 +1,19 @@
 [Database]
-user=postgres
+user=ludika
 dbname=ludika
-password=MY_POSTGRES_PASSWORD
+password=XXXXX
 host=127.0.0.1
 port=5432
 
 [Authentication]
-secret_key=RANDOM_KEY_FOR_JWT_SIGNING
+secret_key=XXXXX
 access_token_expire_minutes=30
 
 [GenerativeAI]
-model=gemini-2.0
 ai_user_id=61443bc0-52c8-49a8-a237-66ce0cdda549
-nvidia_api_key=XXXXXXXXXXXXXXXXXXXXX
-tavily_api_key=XXXXXXXXXXXXXXXXXXXXX
-google_custom_search_api_key=XXXXXXXXXXXXXXXXXXXXX
-reddit_client_id=XXXXXXXXXXXX
-reddit_client_secret=XXXXXXXXXXXXXXXXXXXX
+tavily_api_key=XXXXX
+nvidia_model=meta/llama-3.1-405b-instruct
+nvidia_api_key=nvapi-XXXXX
+google_custom_search_api_key=XXXXX
+reddit_client_id=MY_CLIENT_ID
+reddit_client_secret=XXXXX

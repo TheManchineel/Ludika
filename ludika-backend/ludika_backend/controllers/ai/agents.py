@@ -68,8 +68,7 @@ if os.getenv("NVIDIA_API_KEY") is None:
         raise ValueError("NVIDIA_API_KEY is not set and nvidia_api_key is not set in config.ini")
     os.environ["NVIDIA_API_KEY"] = get_config_value("GenerativeAI", "nvidia_api_key")
 
-PRIMARY_MODEL_NAME = get_config_value("GenerativeAI", "model")
-NVIDIA_MODEL_NAME = "meta/llama-3.1-405b-instruct"
+NVIDIA_MODEL_NAME = get_config_value("GenerativeAI", "nvidia_model")
 
 llm = ChatNVIDIA(model=NVIDIA_MODEL_NAME, rate_limiter=rate_limiter_nvidia)
 
