@@ -367,11 +367,6 @@ onMounted(async () => {
     margin-top: 1rem;
 }
 
-.text-danger {
-    color: #dc3545;
-    font-weight: 500;
-}
-
 @media (min-width: 640px) {
     .form-grid {
         grid-template-columns: 1fr 1fr;

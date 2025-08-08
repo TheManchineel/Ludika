@@ -13,7 +13,7 @@
                     {{ gameError }}
                 </VaAlert>
                 <div class="back-button-section">
-                    <VaButton preset="secondary" @click="$router.push(`/games/${gameId}`)">
+                    <VaButton preset="secondary" @click="navigateTo(`/games/${gameId}`)">
                         <VaIcon name="arrow_back" class="back-icon" />
                         Back to Game
                     </VaButton>
@@ -35,7 +35,6 @@ import GameFormEditor from '~/components/GameFormEditor.vue'
 
 // Get the game ID from the route
 const route = useRoute()
-const router = useRouter()
 const gameId = route.params.id as string
 
 // Set up auth and game data
@@ -51,12 +50,12 @@ useHead({
 const handleSuccess = (updatedGame: GamePublic) => {
     // Navigate to the game's view page using the returned game ID
     // This handles both edit (same ID) and create (new ID) scenarios
-    router.push(`/games/${updatedGame.id}`)
+    navigateTo(`/games/${updatedGame.id}`)
 }
 
 const handleCancel = () => {
     // Navigate back to the game's view page
-    router.push(`/games/${gameId}`)
+    navigateTo(`/games/${gameId}`)
 }
 
 // Fetch the game data to check permissions

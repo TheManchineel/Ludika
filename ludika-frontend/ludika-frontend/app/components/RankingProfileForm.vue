@@ -65,9 +65,8 @@
                 </div>
             </div>
 
-            <!-- Action Buttons -->
             <div class="form-actions">
-                <VaButton @click="$router.push('/rank-games')" preset="secondary" class="cancel-button">
+                <VaButton @click="navigateTo('/rank-games')" preset="secondary" class="cancel-button">
                     Cancel
                 </VaButton>
 
@@ -262,8 +261,7 @@ const handleSubmit = async () => {
             })
         }
 
-        // Navigate back to rank-games page
-        await router.push('/rank-games')
+        navigateTo('/rank-games')
     } catch (err) {
         console.error(`Failed to ${isEditMode.value ? 'update' : 'create'} profile:`, err)
         error.value = `Failed to ${isEditMode.value ? 'update' : 'create'} profile`
@@ -280,8 +278,7 @@ const handleDelete = async () => {
             method: 'DELETE'
         })
 
-        // Navigate back to rank-games page
-        await router.push('/rank-games')
+        navigateTo('/rank-games')
     } catch (err) {
         console.error('Failed to delete profile:', err)
         error.value = 'Failed to delete profile'

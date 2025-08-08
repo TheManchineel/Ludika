@@ -87,7 +87,7 @@ export const useAuth = () => {
                 body: formData
             })
 
-            // After successful signup, automatically log in
+            // After successful signup, automatically log in (could be done prettier but ehh)
             await login({
                 username: credentials.email,
                 password: credentials.password
@@ -137,7 +137,6 @@ export const useAuth = () => {
     }
 
     const authenticatedFetch = async <T>(url: string, options: any = {}): Promise<T> => {
-        // Ensure auth is initialized on client-side
         if (import.meta.client && !globalState.token) {
             initializeAuth()
         }

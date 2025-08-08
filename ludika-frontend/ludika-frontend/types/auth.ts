@@ -4,19 +4,6 @@ export enum UserRole {
     PLATFORM_ADMINISTRATOR = 'platform_administrator'
 }
 
-export const getUserRoleDisplayName = (role: UserRole): string => {
-    switch (role) {
-        case UserRole.USER:
-            return 'User'
-        case UserRole.CONTENT_MODERATOR:
-            return 'Content Moderator'
-        case UserRole.PLATFORM_ADMINISTRATOR:
-            return 'Platform Administrator'
-        default:
-            return 'Unknown Role'
-    }
-}
-
 export interface AuthToken {
     access_token: string
     token_type: string

@@ -25,58 +25,7 @@ export const useGames = () => {
 
   const { authenticatedFetch, withSSRCheck } = useAuth()
 
-  const _fetchGames = async (searchQuery?: string, selectedTags?: number[], page?: number, limit?: number) => {
-    loading.value = true
-    error.value = null
-
-    try {
-      const params = new URLSearchParams()
-
-      if (searchQuery && searchQuery.trim()) {
-        params.append('search', searchQuery.trim())
-      }
-
-      if (selectedTags && selectedTags.length > 0) {
-        params.append('tags', selectedTags.join(','))
-      }
-
-      params.append('page', String(page ?? currentPage.value))
-      params.append('limit', String(limit ?? itemsPerPage.value))
-
-      const url = `/api/v1/games/?${params.toString()}`
-
-      // Get token from auth state instead of cookie
-      const { token } = useAuth()
-
-      // Use native fetch to get headers
-      const baseURL = useRuntimeConfig().public.apiBase || ''
-      const response = await fetch(`${baseURL}${url}`, {
-        headers: {
-          'Authorization': `Bearer ${token.value || ''}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json() as GamePublic[]
-      const totalCountHeader = response.headers.get('X-Total-Count')
-
-      games.value = data
-      totalCount.value = totalCountHeader ? parseInt(totalCountHeader) : data.length
-      if (page !== undefined) currentPage.value = page
-    } catch (err) {
-      error.value = 'Failed to fetch games'
-      console.error('Error fetching games:', err)
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // SSR-safe version
-  const fetchGames = withSSRCheck(_fetchGames)
+  // Note: unified fetching is implemented via _fetchGamesFromEndpoint below.
 
   const _fetchGamesFromEndpoint = async (endpoint: string, searchQuery?: string, selectedTags?: number[], page?: number, limit?: number) => {
     loading.value = true
@@ -128,6 +77,11 @@ export const useGames = () => {
 
   // SSR-safe version
   const fetchGamesFromEndpoint = withSSRCheck(_fetchGamesFromEndpoint)
+
+  // Default games fetcher uses the unified endpoint-based implementation
+  const fetchGames = withSSRCheck(async (searchQuery?: string, selectedTags?: number[], page?: number, limit?: number) => {
+    return _fetchGamesFromEndpoint('/api/v1/games/', searchQuery, selectedTags, page, limit)
+  })
 
   const _fetchGameById = async (id: string | number) => {
     gameLoading.value = true

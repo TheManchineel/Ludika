@@ -3,23 +3,20 @@ definePageMeta({
   layout: 'default'
 })
 
-// Form data
 const formData = reactive({
   url: ''
 })
 
-// State management
+
 const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
-// Form reference
+
 const formRef = ref()
 
-// Get authenticated fetch from useAuth
 const { authenticatedFetch } = useAuth()
 
-// URL validation
 const isValidUrl = (url: string): boolean => {
   try {
     new URL(url)
@@ -29,12 +26,10 @@ const isValidUrl = (url: string): boolean => {
   }
 }
 
-// Form validation
 const isFormValid = computed(() => {
   return formData.url.trim() !== '' && isValidUrl(formData.url)
 })
 
-// Clear messages
 const clearError = () => {
   errorMessage.value = ''
 }
@@ -43,7 +38,6 @@ const clearSuccess = () => {
   successMessage.value = ''
 }
 
-// Handle form submission
 const handleSubmit = async () => {
   if (!formRef.value.validate()) {
     return
@@ -62,10 +56,8 @@ const handleSubmit = async () => {
     })
 
     if (response.success) {
-      // Navigate to the created game
       await navigateTo(`/games/${response.game_id}`)
     } else {
-      // Show error message
       errorMessage.value = response.message || 'Failed to create game from URL'
     }
   } catch (error: any) {

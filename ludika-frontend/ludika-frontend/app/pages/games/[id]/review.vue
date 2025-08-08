@@ -59,7 +59,7 @@
                         </VaButton>
                     </div>
                     <div class="right-actions">
-                        <VaButton preset="secondary" @click="$router.push(`/games/${gameId}`)"
+                        <VaButton preset="secondary" @click="navigateTo(`/games/${gameId}`)"
                             :disabled="updateLoading">
                             Cancel
                         </VaButton>
@@ -88,7 +88,6 @@ import ConfirmationModal from '~/components/ConfirmationModal.vue'
 
 // Get the game ID from the route
 const route = useRoute()
-const router = useRouter()
 const gameId = route.params.id as string
 
 // Set up page metadata
@@ -164,7 +163,7 @@ const handleSubmit = async () => {
         await submitReview(gameId, reviewData)
 
         // Navigate back to game page
-        router.push(`/games/${gameId}`)
+        navigateTo(`/games/${gameId}`)
     } catch (error) {
         console.error('Failed to submit review:', error)
     }
@@ -175,8 +174,7 @@ const handleDeleteReview = async () => {
         await deleteReview(gameId)
         showDeleteModal.value = false
 
-        // Navigate back to game page
-        router.push(`/games/${gameId}`)
+        navigateTo(`/games/${gameId}`)
     } catch (error) {
         console.error('Failed to delete review:', error)
         showDeleteModal.value = false
