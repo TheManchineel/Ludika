@@ -10,7 +10,7 @@ permissions:
   packages: write
 
 env:
-  IMAGE_REPO: ghcr.io/${{ github.repository_owner }}/ludika-backend
+  IMAGE_REPO: ghcr.io/themanchineel/ludika-backend # need to hardcode because Docker is an a*****e and it won't take uppercase names
 
 jobs:
   build-and-push:
@@ -30,7 +30,7 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
+          username: themanchineel # see above
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
