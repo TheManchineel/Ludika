@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useGames } from '~/composables/useGames'
 import GameTagSelector from './GameTagSelector.vue'
-import Pagination from './Pagination.vue'
 
 interface Props {
     searchable?: boolean
@@ -39,22 +38,37 @@ const {
     totalCount,
     hasNextPage,
     hasPreviousPage,
+    supportsServerPagination,
     nextPage,
     previousPage,
     goToPage,
     clearPagination
 } = useGames()
 
+// DEFAULT PAGE SIZE CONSTANT
+const pageSize = 9
+
+// Translate 0-based API pages to 1-based UI control
+const uiPage = computed({
+    get: () => currentPage.value + 1,
+    set: (val: number) => {
+        const nextZeroBased = Math.max(0, (val || 1) - 1)
+        if (nextZeroBased !== currentPage.value) {
+            goToPage(nextZeroBased)
+        }
+    }
+})
+
 // Use custom endpoint if provided, otherwise use default fetchGames
 const loadGames = (searchQuery?: string, selectedTags?: number[], page?: number) => {
     if (props.apiEndpoint === '/api/v1/games/') {
-        fetchGames(searchQuery, selectedTags, page)
+        fetchGames(searchQuery, selectedTags, page, pageSize)
     } else {
-        fetchGamesFromEndpoint(props.apiEndpoint, searchQuery, selectedTags, page)
+        fetchGamesFromEndpoint(props.apiEndpoint, searchQuery, selectedTags, page, pageSize)
     }
 }
 
-// Watch for search query changes
+// We're fully REACTIVE!!!! :3
 watch(searchQuery, (newQuery) => {
     if (props.searchable) {
         clearPagination()
@@ -62,7 +76,6 @@ watch(searchQuery, (newQuery) => {
     }
 })
 
-// Watch for tag selection changes
 watch(selectedTags, (newTags) => {
     if (props.tagFilterable) {
         clearPagination()
@@ -70,25 +83,11 @@ watch(selectedTags, (newTags) => {
     }
 })
 
-// Watch for page changes
 watch(currentPage, (newPage) => {
     loadGames(searchQuery.value, selectedTags.value, newPage)
 })
 
-// Pagination handlers
-const handleNextPage = () => {
-    nextPage()
-}
 
-const handlePreviousPage = () => {
-    previousPage()
-}
-
-const handleGoToPage = (page: number) => {
-    goToPage(page)
-}
-
-// Initial load
 onMounted(() => {
     if (props.tagFilterable) {
         fetchTags()
@@ -133,10 +132,14 @@ onMounted(() => {
                 </div>
 
                 <!-- Pagination -->
-                <Pagination v-if="!loading && !error && games.length > 0" :currentPage="currentPage"
-                    :totalPages="totalPages" :totalCount="totalCount" :hasNextPage="hasNextPage"
-                    :hasPreviousPage="hasPreviousPage" @next="handleNextPage" @previous="handlePreviousPage"
-                    @goto="handleGoToPage" />
+                <div v-if="!loading && !error && games.length > 0 && supportsServerPagination"
+                    class="pagination-wrapper">
+                    <VaPagination v-model="uiPage" :pages="totalPages" input boundary-links direction-links
+                        :visible-pages="5" />
+                    <div class="page-info">
+                        Page {{ uiPage }} of {{ totalPages }} ({{ totalCount }} total items)
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -222,6 +225,21 @@ onMounted(() => {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 2rem;
     padding: 1rem 0;
+}
+
+.pagination-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1rem 0 0;
+}
+
+.page-info {
+    text-align: center;
+    color: #6b7280;
+    font-weight: 500;
 }
 
 /* White [+Add Tag] button */

@@ -8,6 +8,7 @@ export const useGames = () => {
   const reviewCriteria = ref<ReviewCriterion[]>([])
   const tags = ref<TagPublic[]>([])
   const totalCount = ref(0)
+  const supportsServerPagination = ref(false)
   const currentPage = ref(0)
   const itemsPerPage = ref(50)
   const loading = ref(false)
@@ -45,6 +46,11 @@ export const useGames = () => {
       url.searchParams.append('page', String(page ?? currentPage.value))
       url.searchParams.append('limit', String(limit ?? itemsPerPage.value))
 
+      // Keep itemsPerPage in sync with the passed limit so totalPages computes correctly
+      if (typeof limit === 'number' && limit > 0 && itemsPerPage.value !== limit) {
+        itemsPerPage.value = limit
+      }
+
       // Get token from auth state instead of cookie
       const { token } = useAuth()
 
@@ -65,7 +71,14 @@ export const useGames = () => {
       const totalCountHeader = response.headers.get('X-Total-Count')
 
       games.value = data
-      totalCount.value = totalCountHeader ? parseInt(totalCountHeader) : data.length
+      // Treat presence of X-Total-Count as indicator of server-side pagination support
+      if (totalCountHeader) {
+        totalCount.value = parseInt(totalCountHeader)
+        supportsServerPagination.value = true
+      } else {
+        totalCount.value = data.length
+        supportsServerPagination.value = false
+      }
       if (page !== undefined) currentPage.value = page
     } catch (err) {
       error.value = 'Failed to fetch games'
@@ -449,6 +462,7 @@ export const useGames = () => {
     reviewCriteria: readonly(reviewCriteria),
     tags: readonly(tags),
     totalCount: readonly(totalCount),
+    supportsServerPagination: readonly(supportsServerPagination),
     currentPage: readonly(currentPage),
     itemsPerPage: readonly(itemsPerPage),
     totalPages,
