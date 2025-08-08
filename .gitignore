@@ -14,12 +14,4 @@ Icon
 .Trashes
 
 # macOS cache files
-*.swp
-*.lock
 *.DS_Store
-*.AppleDouble
-*.AppleDB
-*.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk

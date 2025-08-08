@@ -1,11 +1,11 @@
 FROM python:3.13.6-slim
 
 USER 99:100
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.8.6 /uv /uvx /bin/
 # Maximize cache by copying the uv.lock file first
-COPY ludika-backend/uv.lock /app/
+COPY ludika-backend/pyproject.toml /app/
 WORKDIR /app
-RUN uv sync --frozen --no-cache
+RUN uv sync --frozen --no-cache --compile-bytecode
 
 # Copy the actual application code
 COPY ludika-backend/ludika_backend /app/
