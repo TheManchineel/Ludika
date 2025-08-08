@@ -1,0 +1,51 @@
+name: Build and Push Frontend Image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ludika-frontend/**
+      - .github/workflows/build-frontend-docker.yml
+      - ludika-deployment/docker/frontend.dockerfile
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_REPO: ghcr.io/themanchineel/ludika-frontend # need to hardcode because Docker is an a*****e and it won't take uppercase names
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set timestamp
+        id: vars
+        run: echo "ts=$(date -u +%Y%m%d%H%M%S)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: themanchineel # see above
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ludika-deployment/docker/frontend.dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_REPO }}:latest
+            ${{ env.IMAGE_REPO }}:${{ steps.vars.outputs.ts }}
+          labels: |
+            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.created=${{ steps.vars.outputs.ts }}
