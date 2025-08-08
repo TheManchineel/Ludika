@@ -1,5 +1,6 @@
 import subprocess
 from fastapi import FastAPI
+from sys import version as python_version
 from datetime import datetime
 
 from fastapi.staticfiles import StaticFiles
@@ -18,6 +19,8 @@ app = FastAPI(
     version="0.1.0",
 )
 
+initialization_time = datetime.now()
+
 
 @app.get("/status")
 @app.get("/")
@@ -30,11 +33,9 @@ async def status():
 
     data = {
         "status": "up",
-        "uptime": subprocess.check_output(["uptime"]).decode("utf-8").strip(),
+        "uptime": str(datetime.now() - initialization_time),
         "server_time": datetime.now().isoformat(),
-        "python_version": subprocess.check_output(["python3", "--version"]).decode("utf-8").strip(),
-        "uvicorn_version": subprocess.check_output(["uvicorn", "--version"]).decode("utf-8").strip(),
-        "system": subprocess.check_output(["uname", "-a"]).decode("utf-8").strip(),
+        "python_version": python_version,
         "time_taken": f"{int((datetime.now() - start).microseconds / 1000)} ms",
     }
     return data
