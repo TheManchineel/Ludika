@@ -7,7 +7,7 @@ WORKDIR /app
 RUN uv sync --frozen --no-cache --compile-bytecode --no-install-project
 
 # Copy the actual application code
-COPY ludika-backend/ludika_backend /app/
+COPY ludika-backend/ludika_backend /app/ludika_backend
 
 EXPOSE 8000
 USER 99:100
