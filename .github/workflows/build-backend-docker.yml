@@ -3,6 +3,9 @@ name: Build and Push Backend Image
 on:
   push:
     branches: [main]
+    paths:
+      - ludika-backend/**
+      - .github/workflows/build-backend-docker.yml
   workflow_dispatch:
 
 permissions:
