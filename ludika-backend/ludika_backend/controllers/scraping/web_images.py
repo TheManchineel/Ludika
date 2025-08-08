@@ -2,12 +2,13 @@ import os
 from io import BytesIO
 
 from ludika_backend.utils.config import get_config_value
+from ludika_backend.utils.uri_safety import is_private_ip
 import requests
 from ludika_backend.utils.logs import get_logger
 
-GOOGLE_CUSTOM_SEARCH_API_KEY = os.getenv("GOOGLE_CUSTOM_SEARCH_API_KEY") or get_config_value(
-    "GenerativeAI", "google_custom_search_api_key"
-)
+GOOGLE_CUSTOM_SEARCH_API_KEY = os.getenv(
+    "GOOGLE_CUSTOM_SEARCH_API_KEY"
+) or get_config_value("GenerativeAI", "google_custom_search_api_key")
 CSE_ID = "c367fb16a0eb44cea"
 
 
@@ -21,7 +22,9 @@ def get_image_links(search_query: str) -> list[str]:
     }
     response = requests.get("https://www.googleapis.com/customsearch/v1", params=query)
     if response.status_code != 200:
-        get_logger().error(f"Failed to get image links: {response.status_code} {response.text}")
+        get_logger().error(
+            f"Failed to get image links: {response.status_code} {response.text}"
+        )
         return image_links
 
     for item in response.json()["items"]:
@@ -44,9 +47,15 @@ def get_image_links(search_query: str) -> list[str]:
 
 def _get_image_from_url(url: str) -> BytesIO | None:
     """Download an image from a URL and return it as a BytesIO object."""
+
+    if is_private_ip(url):
+        get_logger().warning(f"Attempting to access a private IP address: {url}")
+        return None
     response = requests.get(url)
     if response.status_code != 200:
-        get_logger().error(f"Failed to get image from URL: {response.status_code} {response.text}")
+        get_logger().error(
+            f"Failed to get image from URL: {response.status_code} {response.text}"
+        )
         return None
     return BytesIO(response.content)
 
