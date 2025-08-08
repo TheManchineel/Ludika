@@ -12,4 +12,4 @@ COPY ludika-backend/ludika_backend /app/
 EXPOSE 8000
 USER 99:100
 
-CMD ["fastapi", "run", "./ludika_backend/api.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD [".venv/bin/fastapi", "run", "./ludika_backend/api.py", "--host", "0.0.0.0", "--port", "8000"]
