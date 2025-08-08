@@ -5,11 +5,11 @@ definePageMeta({
     layout: 'default'
 })
 
-const { isAdmin, isContentModerator } = useAuth()
+const { isPrivileged } = useAuth()
 
 // Redirect if not privileged user
 onMounted(() => {
-    if (!isAdmin() && !isContentModerator()) {
+    if (!isPrivileged()) {
         navigateTo('/')
     }
 })

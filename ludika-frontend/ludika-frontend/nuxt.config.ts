@@ -1,37 +1,46 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+    compatibilityDate: '2025-07-15',
+    devtools: {enabled: true},
 
-  modules: [
-    "@vuestic/nuxt",
-    "@nuxt/image"
-  ],
+    build: {
+        transpile: [
+            '@fortawesome/vue-fontawesome',
+            '@fortawesome/free-brands-svg-icons',
+            '@fortawesome/fontawesome-svg-core',
+        ]
+    },
 
-  image: {
-    provider: 'none'
-  },
 
-  nitro: {
-    devProxy: {
-      '/api/v1': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        prependPath: true
-      },
-      '/static': {
-        target: 'http://localhost:8000/static',
-        changeOrigin: true,
-        prependPath: true
-      }
-    }
-  },
+    modules: [
+        "@vuestic/nuxt",
+        "@nuxt/image"
+    ],
 
-  css: [
-    '@fortawesome/fontawesome-svg-core/styles.css'
-  ],
+    image: {
+        provider: 'none'
+    },
 
-  plugins: [
-    'plugins/fontawesome.js'
-  ]
+    nitro: {
+        devProxy: {
+            '/api/v1': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
+                prependPath: true
+            },
+            '/static': {
+                target: 'http://localhost:8000/static',
+                changeOrigin: true,
+                prependPath: true
+            }
+        }
+    },
+
+    css: [
+        '@fortawesome/fontawesome-svg-core/styles.css',
+    ],
+
+    plugins: [
+        'plugins/fontawesome.js'
+    ]
 })

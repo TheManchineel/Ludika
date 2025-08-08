@@ -50,7 +50,7 @@ const handleEnabledChange = async (enabled: boolean) => {
 
 // Redirect if not privileged user
 onMounted(() => {
-    if (!isAdmin() && !isContentModerator()) {
+    if (!isAdmin()) {
         navigateTo('/')
     } else {
         fetchUserById(userUuid)

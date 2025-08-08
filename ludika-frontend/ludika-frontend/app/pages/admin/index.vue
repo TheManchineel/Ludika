@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { useAuth } from '~/composables/useAuth'
+import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome";
 
 definePageMeta({
     layout: 'default'
 })
 
-const { isAdmin, isContentModerator } = useAuth()
+const { isAdmin } = useAuth()
 
-// Redirect if not privileged user
 onMounted(() => {
-    if (!isAdmin() && !isContentModerator()) {
+    if (!isAdmin()) {
         navigateTo('/')
     }
 })
@@ -19,15 +19,22 @@ const adminSections = [
         title: 'Games Waiting for Approval',
         description: 'Review and manage games submitted by users that are waiting for approval',
         route: '/admin/games-waiting-for-approval',
-        icon: 'clock',
-        color: 'danger'
+        icon: 'fa-solid fa-clock',
+        color: 'dark'
     },
     {
         title: 'User Management',
         description: 'View, edit, and manage user accounts and permissions',
         route: '/admin/users/',
-        icon: 'users',
+        icon: 'fa-solid fa-users',
         color: 'primary'
+    },
+    {
+        title: 'Reddit Scraping',
+        description: 'Manage the Reddit scraping process',
+        route: '/admin/scraping',
+        icon: 'fab fa-reddit',
+        color: 'danger'
     }
 ]
 </script>
