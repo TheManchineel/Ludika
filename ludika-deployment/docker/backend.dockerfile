@@ -12,4 +12,4 @@ COPY ludika-backend/ludika_backend /app/ludika_backend
 EXPOSE 8000
 USER 99:100
 
-CMD [".venv/bin/uvicorn", "ludika_backend.api:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "warning"]
+CMD [".venv/bin/uvicorn", "ludika_backend.api:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "warning", "--root-path", "/api/v1", "--proxy-headers"]
