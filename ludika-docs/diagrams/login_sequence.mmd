@@ -1,0 +1,44 @@
+sequenceDiagram
+    actor User as User
+    participant Client as Ludika-Frontend
+    participant Server as Ludika-Backend
+    participant DB as PostgreSQL Database
+
+
+    Note over User, Client: User tries to access protected resource
+    User->>Client: navigate to protected resource
+    Note over Client: Check if authenticated
+    alt User is authenticated
+        Client-->>Server: GET /users/me (with JWT token)
+        Note over Server: Validate JWT & fetch user data
+        Server->>DB: SQL query
+        DB-->>Server: Records
+        Server-->>Client: 200 OK, User data (Pydantic/JSON)
+        Note over Client: Display user data
+    else User is not authenticated
+        Client->>User: Redirect to login page
+        Note over User: User has to log in
+    end
+    Note over User, Client: User submits login form
+    Client->>Server: POST /auth/login/?username=...&password=...
+    Note over Server: Validate credentials
+    Server->>DB: Query user by username
+    DB-->>Server: User data (if exists)
+    alt User exists
+        Note over Server: Check password
+        Server->>Server: Hash provided password
+        alt Password matches
+            Server-->>Client: 200 OK, JWT
+            Client->>Client: Store JWT in local storage
+            Client->>User: Redirect to success page
+            Note over User: User is authenticated
+        else Password does not match
+            Server-->>Client: 401 Unauthorized, Invalid credentials
+            Client->>User: Try again
+        end
+    else User does not exist
+        Server-->>Client: 401 Unauthorized, Invalid credentials
+        Client->>User: Try again
+    end
+    Note over User: User receives JWT
+    Note over User: Can now access protected resources
