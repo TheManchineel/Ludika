@@ -33,7 +33,7 @@ def signup(
     hashed_pw = hash_password(password.get_secret_value())
     db_user = User(
         uuid=uuid4(),
-        email=email,
+        email=email.lower(),
         visible_name=visible_name,
         created_at=datetime.now(timezone.utc),
         password_hash=hashed_pw,
@@ -52,7 +52,9 @@ def login(
     session: Session = Depends(get_session),
 ) -> AuthToken:
     """Authenticate a user and return an access token."""
-    user = session.exec(select(User).where(User.email == form_data.username)).first()
+    user = session.exec(
+        select(User).where(User.email == form_data.username.lower())
+    ).first()
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
