@@ -7,7 +7,7 @@ definePageMeta({
 })
 
 const route = useRoute()
-const { isAdmin, isContentModerator, user: currentUser } = useAuth()
+const { isAdmin, isPrivileged, user: currentUser } = useAuth()
 const { user, userLoading, userError, fetchUserById, updateUser } = useUsers()
 
 const userUuid = route.params.uuid as string
@@ -50,7 +50,7 @@ const handleEnabledChange = async (enabled: boolean) => {
 
 // Redirect if not privileged user
 onMounted(() => {
-    if (!isAdmin()) {
+    if (!isPrivileged()) {
         navigateTo('/')
     } else {
         fetchUserById(userUuid)

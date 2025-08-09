@@ -6,10 +6,10 @@ definePageMeta({
     layout: 'default'
 })
 
-const { isAdmin } = useAuth()
+const { isPrivileged } = useAuth()
 
 onMounted(() => {
-    if (!isAdmin()) {
+    if (!isPrivileged()) {
         navigateTo('/')
     }
 })

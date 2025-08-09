@@ -8,12 +8,12 @@ definePageMeta({
     layout: 'default'
 })
 
-const { isAdmin, isContentModerator, user: currentUser } = useAuth()
+const { isAdmin, isPrivileged, user: currentUser } = useAuth()
 const { users, loading, error, fetchUsers, deleteUser, deleteLoading, deleteUserGames } = useUsers()
 
 // Redirect if not privileged user
 onMounted(() => {
-    if (!isAdmin() && !isContentModerator()) {
+    if (!isPrivileged()) {
         navigateTo('/')
     } else {
         fetchUsers()
@@ -87,6 +87,7 @@ const handleDeleteGames = async () => {
 }
 
 const canDeleteUser = (user: UserPublic) => {
+    if (!isAdmin()) return false
     // Don't allow deletion of current user
     return currentUser.value?.uuid !== user.uuid
 }
