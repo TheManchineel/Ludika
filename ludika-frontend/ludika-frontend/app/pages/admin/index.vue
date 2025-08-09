@@ -10,6 +10,7 @@ const { isPrivileged } = useAuth()
 
 onMounted(() => {
     if (!isPrivileged()) {
+        console.log('Unauthorized access to admin panel')
         navigateTo('/')
     }
 })
