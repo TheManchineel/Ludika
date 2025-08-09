@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import SecretStr
+from pydantic import SecretStr, field_validator
 from sqlmodel import SQLModel, Field, Relationship
 from enum import Enum
 from uuid import UUID
@@ -70,6 +70,11 @@ class User(UserBase, table=True):
 
     # In the future, normal users might be allowed to use AI, but right now we only allow privileged ones to do so
     can_use_ai = is_privileged
+
+    @field_validator("email")
+    def email_case(cls, v: str):
+        return v.lower()
+
 
 class UserPublic(UserBase):
     """
