@@ -45,6 +45,7 @@ def generate_game_object_from_url(
             status_code=403, detail="You do not have permission to use AI features."
         )
 
+
 @ai_router.get("/reddit-scraping")
 def get_reddit_scraping_session(current_user: User = Depends(get_current_user)):
     """Get the current Reddit scraping status."""
@@ -53,6 +54,7 @@ def get_reddit_scraping_session(current_user: User = Depends(get_current_user)):
             status_code=403, detail="You do not have permission to use AI features."
         )
     return get_job_stats()
+
 
 @ai_router.post("/reddit-scraping")
 def create_reddit_scraping_session(
@@ -70,6 +72,7 @@ def create_reddit_scraping_session(
         raise HTTPException(
             status_code=400, detail="Reddit scraping is already in progress."
         )
+
 
 @ai_router.get("/test-reddit-fetch")
 def test_reddit_loader(current_user: User = Depends(get_current_user)):

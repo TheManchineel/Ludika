@@ -100,6 +100,7 @@ def create_agent_executor_for_game_create(
     prompt = get_prompt_for_game_create(url)
 
     agent = create_tool_calling_agent(llm, tools, prompt)
+    get_logger().info(f"Created agent for game creation with URL: {url}")
     return AgentExecutor(agent=agent, tools=tools, verbose=True)
 
 
