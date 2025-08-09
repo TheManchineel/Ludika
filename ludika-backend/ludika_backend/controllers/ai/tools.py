@@ -160,7 +160,7 @@ def create_game_with_fixed_url(
                 session.refresh(db_game)
 
                 try:
-                    new_image = get_first_image_from_query(db_game.name + " game")
+                    new_image = get_first_image_from_query(db_game.url)
                     if new_image:
                         new_img_id = add_game_image_last(session, db_game.id, new_image)
                         get_logger().info(
