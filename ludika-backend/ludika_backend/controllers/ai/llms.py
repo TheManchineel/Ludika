@@ -42,10 +42,10 @@ match get_config_value("GenerativeAI", "ai_main_provider"):
         if os.getenv("GOOGLE_API_KEY") is None:
             if get_config_value("GenerativeAI", "google_gemini_api_key") is None:
                 raise ValueError(
-                    "GOOGLE_API_KEY is not set and google_api_key is not set in config.ini"
+                    "GOOGLE_API_KEY is not set and google_gemini_api_key is not set in config.ini"
                 )
             os.environ["GOOGLE_API_KEY"] = get_config_value(
-                "GenerativeAI", "google_api_key"
+                "GenerativeAI", "google_gemini_api_key"
             )
         llm = ChatGoogleGenerativeAI(
             model="gemini-2.0-flash",
