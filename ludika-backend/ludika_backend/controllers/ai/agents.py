@@ -34,9 +34,15 @@ class GameCreationResponse(BaseModel):
     """Structured response for game creation operations"""
 
     success: bool = Field(description="Whether the operation was successful")
-    game_id: Optional[str] = Field(description="UUID of the created game, or null if not created")
-    message: Optional[str] = Field(description="Human-readable message about the operation")
-    game: Optional[GamePublic] = Field(description="The created game object, if successful")
+    game_id: Optional[str] = Field(
+        description="UUID of the created game, or null if not created"
+    )
+    message: Optional[str] = Field(
+        description="Human-readable message about the operation"
+    )
+    game: Optional[GamePublic] = Field(
+        description="The created game object, if successful"
+    )
 
 
 class GameObjectGenerationResponse(BaseModel):
@@ -44,8 +50,12 @@ class GameObjectGenerationResponse(BaseModel):
 
     success: bool = Field(description="Whether the operation was successful")
     game_id: Optional[str] = Field(description="Always null for generation operations")
-    message: Optional[str] = Field(description="Human-readable message about the operation")
-    game_object: Optional[GameCreate] = Field(description="The generated game object, if successful")
+    message: Optional[str] = Field(
+        description="Human-readable message about the operation"
+    )
+    game_object: Optional[GameCreate] = Field(
+        description="The generated game object, if successful"
+    )
 
 
 class EducationalGameURLResponse(BaseModel):
@@ -65,14 +75,26 @@ class EducationalGameURLResponse(BaseModel):
 
 if os.getenv("NVIDIA_API_KEY") is None:
     if get_config_value("GenerativeAI", "nvidia_api_key") is None:
-        raise ValueError("NVIDIA_API_KEY is not set and nvidia_api_key is not set in config.ini")
+        raise ValueError(
+            "NVIDIA_API_KEY is not set and nvidia_api_key is not set in config.ini"
+        )
     os.environ["NVIDIA_API_KEY"] = get_config_value("GenerativeAI", "nvidia_api_key")
 
 NVIDIA_MODEL_NAME = get_config_value("GenerativeAI", "nvidia_model")
 
-llm = ChatNVIDIA(model=NVIDIA_MODEL_NAME, rate_limiter=rate_limiter_nvidia)
+llm = ChatNVIDIA(
+    model=NVIDIA_MODEL_NAME,
+    rate_limiter=(
+        rate_limiter_nvidia
+        if bool(get_config_value("GenerativeAI", "rate_limit_nvidia"))
+        else None
+    ),
+)
 
-def create_agent_executor_for_game_create(url: str, game_added_callback: Callable | None = None):
+
+def create_agent_executor_for_game_create(
+    url: str, game_added_callback: Callable | None = None
+):
     """Create an agent executor for game creation with a fixed URL"""
     tools = get_tools_for_game_create(url, game_added_callback)
     prompt = get_prompt_for_game_create(url)
@@ -91,7 +113,9 @@ def create_agent_executor_for_object_generation(url: str):
 
 
 class PossibleGameURLOutput(BaseModel):
-    url: str | None = Field(description="The URL of the possible game, or None if no game is found")
+    url: str | None = Field(
+        description="The URL of the possible game, or None if no game is found"
+    )
 
     @field_validator("url")
     def validate_url(cls, v):
@@ -113,11 +137,11 @@ game_detection_agent = create_tool_calling_agent(
     ),
 )
 
-game_detection_executor = AgentExecutor(agent=game_detection_agent, tools=[tavily_search_tool])
+game_detection_executor = AgentExecutor(
+    agent=game_detection_agent, tools=[tavily_search_tool]
+)
 
 
 class DetectionResult(BaseModel):
     has_game_url: bool
     url: Optional[str]
-
-

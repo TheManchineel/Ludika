@@ -159,14 +159,14 @@ In order to achieve these goals, the project was developed using a three-tier ar
 
 The use of Docker allows for easy deployment and management of the various components of the system, and the Cloudflare CDN enables fast and reliable content delivery.
 
-\section{Related Work---a comparative overview}
-\todo{add a comparative analysis of the most similar existing platforms, and/or relevant studies that have been conducted in the past.}
+% \section{Related Work---a comparative overview}
+% \todo{add a comparative analysis of the most similar existing platforms, and/or relevant studies that have been conducted in the past.}
 
 \section{Innovation of the proposed solution}
 
-The core value-add of the proposed solution is the tight integration of all the core components (game discovery, agentic web scraping, a ranking algorithm and the fine-tuned game indexing and scraping systems) into a single platform. In particular, the ability for teachers to define their own criteria makes using this platform more helpful, relevant and personal than any experience possible using a generic off-the-shelf CMS solution like Wordpress.
+The core value-add of Ludika is the tight integration of all the core components (game discovery, agentic web scraping, a ranking algorithm and the fine-tuned game indexing and scraping systems) into a single platform, and the bespoke agentic functionality it offers. In particular, the ability for teachers to define their own criteria makes using this platform more helpful, relevant and personal than any experience possible using a generic off-the-shelf CMS solution like Wordpress.
 
-To achieve this, the web scraping component of the platform implements a \href{https://en.wikipedia.org/wiki/Multi-agent_system}{Multi-Agent System (MAS)}: a system composed of different specialist agents and programmatic tools arranged in a pipeline to fetch, evaluate, index, enrich with metadata and therefore categorize educational games found in organic discussions between users of the popular internet site Reddit or proposed directly by a content moderator. An additional scraper is used to fetch images and other information from the web (Wikipedia, Google and Tavily).
+To achieve this, the web scraping component of the platform implements a \href{https://en.wikipedia.org/wiki/Multi-agent_system}{Multi-Agent System (MAS)}: the go-to design for complex applications leveraging Large Language Models, it is a system composed of different specialist agents and programmatic tools arranged in a pipeline to fetch, evaluate, index, enrich with metadata and therefore categorize educational games found in organic discussions between users of the popular internet site Reddit or proposed directly by a content moderator. An additional scraper is used to fetch images and other information from the web (Wikipedia, Google and Tavily).
 
 \begin{figure}[H]
     \centering
@@ -221,7 +221,7 @@ The platform is built upon a robust technology stack that includes:
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth,trim={2cm 0 2cm 0}]{figures/pdfs/Architecture.pdf}
-    \caption{Architecture Diagram}
+    \caption{Architectural Diagram}
 \end{figure}
 
 The architecture of the platform is designed to be modular and horizontally scalable. \textbf{Most of the functionality is delegated to the server, while the client is exclusively responsible for the presentation layer, provided by Nuxt and also partially rendered on the server}.
@@ -358,6 +358,68 @@ Optional authentication is useful for endpoints that are not protected by defaul
 The frontend was developed using Nuxt, a Node framework for building server-rendered applications with Vue. The goal was to create a responsive, mobile-friendly single-page application that exposes all the functionality implemented in the API.
 
 To that end, open-source components from the Vuestic UI library were used in conjunction with custom components to create a modern and visually appealing UI. Nuxt Images is used for optimized loading of images, and a variety of custom composables handle the interaction with the API.
+
+When the user opens the website, they are immediately presented with a store-like view of the available games, with a search bar and a tag selector to fine-tune the results.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,trim={0 2cm 0 1cm}]{figures/ludika_homepage.png}
+    \caption{Ludika Homepage}
+\end{figure}
+
+Much care went into designing the game detail page, which provides a comprehensive overview of the game along with its metadata and image slideshow, but is also home to the game's reviews and ratings:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,trim={0 1cm 0 1cm}]{figures/game_detail_view.png}
+    \includegraphics[width=0.9\textwidth,trim={0 2cm 0 1cm}]{figures/game_detail_review.png}
+    \caption{Ludika Game Detail Page, showing a user's review}
+\end{figure}
+
+Users must log in to leave a review. Anyone can freely create an account through the registration page, and users get logged in automatically after registration.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,trim={0 1cm 0 1cm}]{figures/login.png}
+    \caption{The sign-in page, which can be accessed from anywhere and automatically opens when the user tries to access a protected route.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,trim={0 1cm 0 1cm}]{figures/edit_review.png}
+    \caption{Users can review games to provide feedback and ratings. Each review can include any number of ratings from the available criteria.}
+\end{figure}
+
+The core feature of this project---comparative game evaluation---is implemented in the \textit{Rank Games} section, accessible from the top bar.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,trim={0 1cm 0 1cm}]{figures/rank_games.png}
+    \caption{\textit{Rank Games} shares its \texttt{GameLibrary} component with the main screen, as well as other views (e.g. the \textit{My Games} screen), with \texttt{prop}-based customization options to adapt it to the specific use case.}
+\end{figure}
+
+Vue props are used extensively throughout the application to pass configuration and data assignments to custom components. This makes it as easy as this to define a new view using the \texttt{GameLibrary} component:
+
+\begin{lstlisting}[language=HTML]
+<template>
+    <div>
+        <GameLibrary title="My Games"
+                     subtitle="Manage your created games"
+                     apiEndpoint="/api/v1/games/my-games"
+                    :showHero="true" :searchable="true"
+                    :tagFilterable="false"
+        />
+    </div>
+</template>
+\end{lstlisting}
+
+Forms are also widely used within the application. Some forms also integrate cards and choice dropdowns to provide a more interactive and intuitive editing of structured items. Such is the case for reviews (as seen above), as well as the editing of custom ranking profiles for games.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,trim={0 1cm 0 1cm}]{figures/rank_profile.png}
+    \caption{The ranking profile editor allows users to create custom profiles with a set of criteria and weights, which can then be used to rank games.}
+\end{figure}
 
 \subsubsection{Agentic Web Scraping}
 \todo{Add a detailed description of the agentic web scraping. Will be included once the agentic web scraping is complete.}
