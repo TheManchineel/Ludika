@@ -10,7 +10,8 @@
     <img src="https://img.shields.io/badge/backend-FastAPI-blue?logo=fastapi" alt="FastAPI"/>
     <img src="https://img.shields.io/badge/database-PostgreSQL-blue?logo=postgresql" alt="PostgreSQL"/>
     <img src="https://img.shields.io/badge/docs-LaTeX-orange?logo=latex" alt="LaTeX"/>
-    <img src="https://github.com/TheManchineel/Ludika/actions/workflows/build-backend-docker/badge.svg" alt="GitHub Actions Status"/>
+    <img src="https://github.com/TheManchineel/Ludika/actions/workflows/build-backend-docker.yml/badge.svg" alt="GitHub Actions Status"/>
+    <img src="https://github.com/TheManchineel/Ludika/actions/workflows/build-frontend-docker.yml/badge.svg" alt="GitHub Actions Status"/>
 </p>
 
 
