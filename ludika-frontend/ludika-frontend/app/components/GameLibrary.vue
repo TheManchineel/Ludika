@@ -137,7 +137,7 @@ onMounted(() => {
                     <VaPagination v-model="uiPage" :pages="totalPages" input boundary-links direction-links
                         :visible-pages="5" />
                     <div class="page-info">
-                        Page {{ uiPage }} of {{ totalPages }} ({{ totalCount }} total items)
+                        ({{ totalCount }} total items)
                     </div>
                 </div>
             </div>

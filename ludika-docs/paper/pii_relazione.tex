@@ -174,7 +174,7 @@ To achieve this, the web scraping component of the platform implements a \href{h
     \caption{Agentic Web Scraping Pipeline}
 \end{figure}
 
-With the default criteria provided, teachers are able to compare their own preferences with those of their colleagues by seeing how the same game ranks under different sets of weights, allowing them to make more informed decisions about which games to use in their classrooms.
+With the default criteria provided, teachers are able to compare their own preferences with those of their colleagues. Then, they can create their own sets of weights and see how games stack up against their specific requirements, allowing them to make more informed decisions about which games to use in their classrooms.
 
 This platform is intended to be a living, breathing tool that evolves with the needs of its users. It has a community-driven approach to development, enabling administrators to take in suggestions and feedback from users and extend categorization and evaluation options as needed.
 
@@ -275,6 +275,7 @@ The data model is designed with efficiency and simplicity in mind, using SQL--na
     \item \texttt{game\_status}: \{\texttt{draft}, \texttt{submitted}, \texttt{approved}, \texttt{rejected}\}
 \end{itemize}
 
+The \textbf{class diagram} (UML) of the Python data model matches the structure of the database schema, thanks to the use of SQLModel, fully deduplicating model definition across SQL and Python code.
 
 \subsubsection{API Model}
 
