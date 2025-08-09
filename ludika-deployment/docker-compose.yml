@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: ghcr.io/themanchineel/ludika-frontend:latest
+    ports:
+      - "3051:3051"
+    restart: unless-stopped
+
+  backend:
+    image: ghcr.io/themanchineel/ludika-backend:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app/static:/app/static
+      - ./app/config.ini:/app/config.ini
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "443:443"
+    depends_on:
+      - frontend
+      - backend
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+      - ./app/static:/app/static:ro
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ludika
+      POSTGRES_PASSWORD: LUDIKA_PASSWORD
+      POSTGRES_DB: ludika
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
