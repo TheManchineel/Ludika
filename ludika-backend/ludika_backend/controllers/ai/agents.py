@@ -2,9 +2,8 @@ from typing import Optional, Callable
 from pydantic import BaseModel, Field
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_nvidia_ai_endpoints import ChatNVIDIA
-from langchain_core.rate_limiters import InMemoryRateLimiter
 
+from ludika_backend.controllers.ai.llms import llm
 from ludika_backend.controllers.ai.prompts import (
     GAME_DETECTION_PROMPT,
     get_prompt_for_game_create,
@@ -16,18 +15,9 @@ from ludika_backend.controllers.ai.tools import (
     tavily_search_tool,
 )
 from ludika_backend.models.games import GameCreate, GamePublic
-from ludika_backend.utils.config import get_config_value
 from ludika_backend.utils.logs import get_logger
-import os
 
 from pydantic.functional_validators import field_validator
-
-
-rate_limiter_nvidia = InMemoryRateLimiter(
-    requests_per_second=1.0,
-    check_every_n_seconds=0.1,
-    max_bucket_size=15,
-)
 
 
 class GameCreationResponse(BaseModel):
@@ -71,25 +61,6 @@ class EducationalGameURLResponse(BaseModel):
             if not v.startswith(("http://", "https://")):
                 raise ValueError("URL must start with http:// or https://")
         return v
-
-
-if os.getenv("NVIDIA_API_KEY") is None:
-    if get_config_value("GenerativeAI", "nvidia_api_key") is None:
-        raise ValueError(
-            "NVIDIA_API_KEY is not set and nvidia_api_key is not set in config.ini"
-        )
-    os.environ["NVIDIA_API_KEY"] = get_config_value("GenerativeAI", "nvidia_api_key")
-
-NVIDIA_MODEL_NAME = get_config_value("GenerativeAI", "nvidia_model")
-
-llm = ChatNVIDIA(
-    model=NVIDIA_MODEL_NAME,
-    rate_limiter=(
-        rate_limiter_nvidia
-        if bool(get_config_value("GenerativeAI", "rate_limit_nvidia"))
-        else None
-    ),
-)
 
 
 def create_agent_executor_for_game_create(
