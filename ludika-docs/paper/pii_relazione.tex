@@ -151,11 +151,11 @@ The growing prevalence of online learning and game-based educational tools has l
     \caption{Growth of the Game-Based Learning Market, including the projected growth till 2032.}
 \end{figure}
 
-Through a sleek user-friendly web interface, teachers and students alike can easily browse, cross-compare, suggest and review various educational games. The platform will also provide a set of metrics and analytics to help teachers gauge the effectiveness of these tools in their classrooms. Native integration with the API of OpenAI-compatible Large Language Models (LLMs) allows for interactive, AI-facilitated categorization and addition of new games, as well as the generation of summaries, comparisons, and personalized recommendations based on user requirements.
+Through a sleek user-friendly web interface, teachers and students alike can easily browse, rank, suggest and review various educational games. The platform also provides a set of metrics to help teachers gauge the effectiveness of these tools in their classrooms given their priorities. Native integration with the API of OpenAI-compatible Large Language Models (LLMs) allows for AI-facilitated categorization and addition of new games, as well as the retrieval of metadata and assets from the web and the generation of summaries, enriching the collection.
 
-Given diverging priorities and needs, teachers greatly benefit from the ability to use Multi-Criteria Decision Making (MCDM) and Weighted Ranking methods to evaluate and compare educational games. The platform will allow teachers to create custom evaluation criteria, assign weights to each criterion, and then rank the games based on their performance against these criteria.
+Given diverging priorities and needs, teachers greatly benefit from the ability to use Multi-Criteria Decision Making (MCDM) and Weighted Ranking methods to evaluate and compare educational games. The platform allows teachers to create custom evaluation profiles, assign weights to each criterion within a profile, and then rank the games based on their performance against these criteria.
 
-In order to achieve these goals, the project was developed using a three-tier architecture with the API and backend logic contained within a monolithic service, in order to attain the best efficiency and reduce the footprint of service interoperation logic. The platform is built using state-of-the-art web technologies, including Nuxt for the frontend, FastAPI for the backend, and PostgreSQL for the database. Langchain provides the backbone for agentic features, while evaluations are algorithmically generated based on the games' metadata and user reviews. Mistral and NVIDIA Large Language Models (LLMs) are used to provide personalized recommendations and summaries of the games, as well as to facilitate the addition of new games through agentic web scraping.
+In order to achieve these goals, the project was developed using a \textbf{three-tier architecture} with the API and backend logic contained within a monolithic service, in order to attain the best efficiency and reduce the footprint of service interoperation logic. The platform is built using state-of-the-art web technologies, including Nuxt for the frontend, FastAPI for the backend, and PostgreSQL for the database. LangChain provides the backbone for agentic features, while evaluations are algorithmically generated based on the games' metadata and user reviews. \textbf{Google} and \textbf{Mistral (via NVIDIA NIM)} Large Language Models (LLMs) are used to scan the web for games, and the platform of choice for scraping was \textbf{Reddit}, given the accessible and conversational nature of its content.
 
 The use of Docker allows for easy deployment and management of the various components of the system, and the Cloudflare CDN enables fast and reliable content delivery.
 
@@ -213,7 +213,7 @@ The platform is built upon a robust technology stack that includes:
     \item \textbf{Web Scraping:} \inlineicon{bs.png} \href{https://pypi.org/project/beautifulsoup4/}{Beautiful Soup}, a Python library for web scraping that allows for easy extraction of data from HTML and XML documents. It provides a powerful and flexible framework for building web crawlers allowing users to add new games with minimal human intervention.
     \item \textbf{Reddit Integration:} \inlineicon{praw.png} \href{https://praw.readthedocs.io/en/stable/}{PRAW}, the Python Reddit API Wrapper, which provides a powerful interface for interacting with the Reddit API. It allows for easy integration with Reddit, enabling the platform to fetch and index new educational games from Reddit communities.
     \item \textbf{CDN:} \inlineicon{cloudflare.png} \href{https://www.cloudflare.com/}{Cloudflare}, providing fast and reliable content delivery through its global network.
-    \item \textbf{LLM Integration:} \inlineicon{langchain.png} \href{https://www.langchain.com/}{Langchain}, enabling the use of compatible Large Language Models for automated categorization and information retrieval.
+    \item \textbf{LLM Integration:} \inlineicon{langchain.png} \href{https://www.langchain.com/}{LangChain}, enabling the use of compatible Large Language Models for automated categorization and information retrieval.
 \end{itemize}
 
 \subsection{Architecture}
@@ -422,15 +422,103 @@ Forms are also widely used within the application. Some forms also integrate car
     \caption{The ranking profile editor allows users to create custom profiles with a set of criteria and weights, which can then be used to rank games.}
 \end{figure}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,trim={0 1cm 0 1cm}]{figures/admin_panel.png}
+    \caption{The admin panel provides a comprehensive overview of the system, allowing privileged users to manage users, games, and the scraping facilities.}
+\end{figure}
+
+\pagebreak
+
 \subsubsection{Agentic Web Scraping}
-\todo{Add a detailed description of the agentic web scraping. Will be included once the agentic web scraping is complete.}
+Agentic Web Scraping is at the heart of two features in Ludika: the \textbf{automated, background scraping of social media/forum communities} (Reddit) for new educational games to add to the platform, and \textbf{the fetching of game metadata and assets from the web} to speed up the onboarding process for new games proposed by content moderators.
+
+\begin{itemize}
+    \item \textbf{Reddit scraping} is implemented using the \texttt{RunnableLambda} paradigm of LangChain, which allows for parallel processing of tasks. In the first stage, posts are fetched from Reddit communities via the site's JSON API, using the PRAW library to programmatically talk to Reddit.
+
+    Then, the posts are processed and filtered to extract metadata, which is fed into the LangChain pipeline for detection of relevant game URLs. This first \textbf{Detection Agent} has access to a \texttt{TavilySearch} tool that uses the Tavily API to gain insights from the web, if needed.
+
+    A simple check is run against the URL to ensure it's not already present in the database, and then URLs are fed into the subsequent stage of the pipeline, where a second \textbf{Metadata Retrieval Agent} finds additional information using the Tavily API, Wikipedia (via a custom \texttt{wikipedia\_search} tool), as well as metadata from the URL's webpage itself.
+
+    This second agent also has access to tools to interact with the database and in particular also selects \texttt{Tag}s to be associated with the new game, as well as checks if the game is present in the DB, in case the previous check did not catch this duplication. A structured response is output from the agent with a special tool, \texttt{create\_game\_with\_fixed\_url}; this is a parametrized tool that is instantiated when setting up the agent's pipeline, ensuring that AI "hallucination" can at least not interfere with the URL provided by the site (or user).
+
+    One final step leverages the power of Google's CSE (Custom Search Engine) API to find images for the game. These are fetched using \textit{Requests}
+    \item \textbf{Metadata retrieval} for user-submitted games essentially uses only the second stage of the pipeline described above, where the user-provided URL is passed to the \texttt{Metadata Retrieval Agent} to fetch additional information about the game. This includes the game's name, description, tags, and images. The agent uses the same tools as before, and the ID of the resulting game is returned to the user, who can immediately view the result of the agentic generation.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth,trim={0 1cm 0 1cm}]{figures/create_with_ai.png}
+    \caption{The UI for creating a new game with AI assistance in Ludika.}
+\end{figure}
 
 \section{Results \& Conclusion}
 
-\todo{add a detailed description of the user interface (UI/UX), including screenshots, a description of the various components and the developer experience (DX) envisioned for the maintainability of this project, as well as a brief how-to guide for using the platform.}
+The final design attempts to blend user-friendly interfaces with effective API design and a wholly robust and maintainable package. The user interface is designed to work on both desktop and mobile devices with any screen size, and the API is built to be easy to extend and to have minimum attack surface in terms of security concerns.
 
-\todo{mention some of the challenges faced and unique solutions developed using code, such as integration of FastAPI and Python with Nuxt and JS, the agentic functionality, and the implementation of algorithmic ranking and evaluation, as well as an overview of the testing infrastructure. This part also goes over the lessons learned from the development of the project and its potential for future extension.}
+Development took place over the course of a few months in the 2nd semester of Academic Year 2024/2025, with the first few weeks dedicated to researching technology, planning out the architecture and data model design, reading documentation and experimenting with the various components of the stack.
 
+\subsection{Challenges with the implementation \& original value additions}
+
+Several challenges were encountered during the implementation of the Ludika platform. One of the primary aims was ensuring seamless integration between the various components of the stack, particularly the interaction between the FastAPI backend and the Nuxt frontend. This required careful planning and design of the endpoints, the establishment and following of several conventions for data formats and methods (visible in the \href{https://ludika.modica.io}{official API Documentation}), and the creation of useful wrappers on the client--side to minimize the chances of diverging behaviors in different parts of the app.
+
+Another challenging aspect was the implementation of the agentic feature set, which involved creating a system that could intelligently respond to input data and make decisions based on the context of operation. This required extensive testing and tweaking of the prompts and representation formats used to talk with the LLMs, as well as fine-tuning the detection algorithms and tooling to reduce unintended behavior. One key aspect of this was parametrizing and delegating as much of the orchestration/decision--making process as possible to deterministic logic. For instance, the initialization of the agent pipeline takes advantage of Python's functional programming elegance and thread synchronization features to create a pipeline with forward--passing of context and safe concurrent access to observability metrics:
+
+\begin{lstlisting}[language=Python]
+def pipeline_factory(self):
+    """Create a pipeline for processing Reddit posts"""
+    def detect_and_process(post: RedditPost):
+        raw_detection = game_detection_executor.invoke(
+            {"post_content": f"{post.title}"
+                             f"{'\n\n' + post.url if post.url else ''}\n\n"
+                             f"{post.selftext}"
+            }
+        )
+
+        detection = DetectionResult(**json.loads(raw_detection["output"]))
+        self._posts_processed_counter.increment()
+
+        if detection.has_game_url and detection.url:
+            self._games_found_counter.increment()
+            get_logger().info(f"Found game URL: {detection.url}"
+                              f" for post: {post.title}")
+            with db_context() as db_session:
+                if db_session.exec(
+                    select(Game)
+                    .where(Game.url == detection.url)
+                ).first():
+                    return {
+                        "skipped": True,
+                        "reason": "Game already exists",
+                        "post_title": post.title
+                    }
+            executor = create_agent_executor_for_game_create(
+                detection.url,
+                game_added_callback=lambda:
+                    self._games_added_counter.increment()
+            )
+            return executor.invoke({})
+
+        return {
+            "skipped": True,
+            "reason": "No game URL detected",
+            "post_title": post.title
+        }
+
+    def complete_pipeline():
+        self._posts = get_top_posts()
+        self._posts_found = len(self._posts)
+        RunnableLambda(detect_and_process).batch(self._posts)
+
+    return complete_pipeline
+\end{lstlisting}
+
+
+The final implementation of the AI controller, while not entirely free from issues stemming from LLM non--determinism (which require some degree of human oversight to vet data as it is imported), is robust enough to have been used to populate the majority of the entries on the platform.
+
+The project has the potential to significantly enhance the user experience for teachers and students by providing a more interactive and engaging platform for discovering and evaluating educational games than existing websites within its niche. The community--based approach to growing its library and the use of AI to streamline the game creation process is a key differentiator for Ludika, allowing the platform to grow organically while also gaining insight into new titles within the Game--Based Learning (GBL) space from online activity with no direct human intervention.
+
+\pagebreak
 \section{Bibliography}
 
 \subsection{Reference Documentation}
@@ -438,7 +526,7 @@ Forms are also widely used within the application. Some forms also integrate car
     \item \href{https://www.postgresql.org/docs/current/}{PostgreSQL Official Documentation}: reference for the database system, including schema configuration, data types and advanced query features.
     \item \href{https://nuxt.com/docs/getting-started/introduction}{Nuxt Documentation}: reference for the frontend framework, including routing, state management and server-side rendering.
     \item \href{https://fastapi.tiangolo.com/tutorial/}{FastAPI Documentation}: used as reference for building the API, developing authentication and authorization, and implementing the database models.
-    \item \href{https://langchain.com/docs/get_started/introduction.html}{Langchain Documentation}: reference for the integration of OpenAI-compatible Large Language Models, including the use of agents, callables, chains and document retrievers.
+    \item \href{https://langchain.com/docs/get_started/introduction.html}{LangChain Documentation}: reference for the integration of OpenAI-compatible Large Language Models, including the use of agents, callables, chains and document retrievers.
     \item \href{https://scrapy.org/doc/en/latest/}{Scrapy Documentation}: reference for the web scraping library, used to fetch and index new educational games.
     \item \href{https://sqlmodel.tiangolo.com/}{SQLModel Documentation}: reference for the ORM library, used to interact with the database and define the data models.
 \end{itemize}
