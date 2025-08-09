@@ -1,20 +1,23 @@
 [Database]
 user=ludika
 dbname=ludika
-password=XXXXX
+password=XXXXXXXXXXXXXXXXXXXXX
 host=127.0.0.1
 port=5432
 
 [Authentication]
-secret_key=XXXXX
-access_token_expire_minutes=30
+secret_key=XXXXXXXXXXXXXXXXXXXXX
+access_token_expire_minutes=43200
 
 [GenerativeAI]
+ai_main_provider=google
 ai_user_id=61443bc0-52c8-49a8-a237-66ce0cdda549
-tavily_api_key=XXXXX
+tavily_api_key=tvly-dev-XXXXXXXXXXXXXXXXXXXXX
 nvidia_model=meta/llama-3.1-405b-instruct
-nvidia_api_key=nvapi-XXXXX
-nvidia_rate_limit=False
-google_custom_search_api_key=XXXXX
-reddit_client_id=MY_CLIENT_ID
-reddit_client_secret=XXXXX
+rate_limit_llm=False
+google_gemini_api_key=XXXXXXXXXXXXXXXXXXXXX
+nvidia_api_key=nvapi-XXXXXXXXXXXXXXXXXXXXX
+google_custom_search_api_key=XXXXXXXXXXXXXXXXXXXXX
+reddit_client_id=XXXXXXXXXXXXXXXXXXXXX
+reddit_client_secret=XXXXXXXXXXXXXXXXXXXXX
+enable_reddit_scraping=true

@@ -8,7 +8,11 @@ from ludika_backend.controllers.ai.reddit_jobs import get_job_stats, start_job
 from ludika_backend.controllers.auth import get_current_user
 from ludika_backend.models import User
 from ludika_backend.controllers.scraping.reddit import get_top_posts
+from ludika_backend.utils.config import get_config_value
 
+SCRAPING_ENABLED = (
+    get_config_value("GenerativeAI", "enable_reddit_scraping").lower() == "true"
+)
 
 ai_router = APIRouter()
 
@@ -64,6 +68,12 @@ def create_reddit_scraping_session(
     if not current_user.can_use_ai():
         raise HTTPException(
             status_code=403, detail="You do not have permission to use AI features."
+        )
+
+    if not SCRAPING_ENABLED:
+        raise HTTPException(
+            status_code=400,
+            detail="Reddit scraping is not currently enabled on this instance (need to set `enable_reddit_scraping` to `true` in `config.ini`).",
         )
 
     if start_job():
