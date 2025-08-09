@@ -14,7 +14,8 @@
     <div v-else class="no-reviews">
         <div class="no-reviews-content">
             <font-awesome-icon icon="comments" class="no-reviews-icon" />
-            <p>No reviews yet for this game</p>
+            <p v-if="isAuthenticated">No reviews yet for this game</p>
+            <p v-else>Please log in to leave a review</p>
             <p class="no-reviews-subtitle">Be the first to share your thoughts!</p>
         </div>
     </div>
@@ -24,6 +25,9 @@
 import type { GameReview } from '../../types/game'
 import ReviewCard from './ReviewCard.vue'
 import { useGames } from '~/composables/useGames'
+import { useAuth } from '~/composables/useAuth'
+
+let { isAuthenticated } = useAuth()
 
 interface Props {
     reviews: readonly GameReview[] | undefined
