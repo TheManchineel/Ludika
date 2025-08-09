@@ -10,17 +10,16 @@ llm = None
 TEMPERATURE_SETTING = 0.0
 
 rate_limiter = (
-    (
-        InMemoryRateLimiter(
+    {
+        "rate_limiter": InMemoryRateLimiter(
             requests_per_second=1.0,
             check_every_n_seconds=0.1,
             max_bucket_size=15,
         )
-        if bool(get_config_value("GenerativeAI", "rate_limit_llm"))
-        else None
-    ),
+    }
+    if bool(get_config_value("GenerativeAI", "rate_limit_llm"))
+    else {}
 )
-
 
 match get_config_value("GenerativeAI", "ai_main_provider"):
     case "nvidia":
@@ -34,9 +33,7 @@ match get_config_value("GenerativeAI", "ai_main_provider"):
             )
         NVIDIA_MODEL_NAME = get_config_value("GenerativeAI", "nvidia_model")
         llm = ChatNVIDIA(
-            model=NVIDIA_MODEL_NAME,
-            rate_limiter=(rate_limiter),
-            temperature=TEMPERATURE_SETTING,
+            temperature=TEMPERATURE_SETTING, model=NVIDIA_MODEL_NAME, **rate_limiter
         )
     case "google":
         if os.getenv("GOOGLE_API_KEY") is None:
@@ -48,9 +45,7 @@ match get_config_value("GenerativeAI", "ai_main_provider"):
                 "GenerativeAI", "google_gemini_api_key"
             )
         llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash",
-            temperature=TEMPERATURE_SETTING,
-            rate_limiter=rate_limiter,
+            model="gemini-2.0-flash", temperature=TEMPERATURE_SETTING, **rate_limiter
         )
     case _:
         raise ValueError("Invalid AI provider specified.")
