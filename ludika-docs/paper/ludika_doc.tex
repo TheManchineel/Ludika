@@ -1,0 +1,553 @@
+% !TEX program = xelatex
+\documentclass[11pt,italian,a4paper]{article}
+
+\usepackage{fancyhdr}
+\usepackage[a4paper, total={6.5in, 9.5in}]{geometry}
+\usepackage{fontspec}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{foreign}
+\usepackage[american]{babel}
+\usepackage[export]{adjustbox}
+\usepackage{ragged2e}
+\usepackage{xurl}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{amsmath}
+\usepackage{graphicx,floatpag,caption}
+\usepackage{rotating}
+\usepackage{blindtext}
+\usepackage{pst-plot}
+\usepackage{pgfplots}
+\usepackage[table]{xcolor}
+\usepackage{wrapfig}
+\usepackage{multirow}
+\usepackage{stackengine}
+\usepackage{pdflscape}
+\usepackage{tcolorbox}
+\usepackage{float}
+\usepackage{fontawesome5}
+\usepackage{listings}
+\usepackage[usenames,dvipsnames]{xcolor}
+
+% ------ DRAFT WATERMARK ------
+% \usepackage{draftwatermark}
+% \SetWatermarkText{DRAFT}
+% \SetWatermarkScale{1}
+% \SetWatermarkLightness{0.9}
+% -----------------------------
+
+\hypersetup{
+    colorlinks,
+    linkcolor={red!50!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
+
+\definecolor{violettissimo}{RGB}{159, 116, 183}
+\definecolor{violettinissimo}{RGB}{207, 185, 219}
+\definecolor{verde}{RGB}{102, 153, 0}
+\definecolor{mio-rosso}{RGB}{159, 116, 183}
+
+\lstset{
+    basicstyle=\small\ttfamily,
+    keywordstyle=\color{cyan},
+    stringstyle=\color{verde},
+    commentstyle=\color{gray},
+    numberstyle=\color{violettissimo},
+    showstringspaces=false,
+    numbers=left,
+}
+
+\renewcommand{\familydefault}{\sfdefault}
+
+\pagenumbering{arabic}
+\title{Computer Science & Engineering Project}
+\author{Alessandro Modica (10822654 / 212683)}
+\pagestyle{fancy}
+\date{Aug 8, 2025}
+
+\fancyfoot[C]{\thepage}
+
+\newcommand{\todo}[1]{\noindent {\Huge \color{orange} TODO -- #1}}
+\newcommand{\inlineicon}[1]{\raisebox{-.25\height}{\includegraphics[height=\baselineskip,keepaspectratio]{figures/icons/#1}}}
+
+\begin{document}
+\begin{titlepage}
+    \begin{center}
+
+        \Huge{Computer Engineering Project Report}\\
+        \vspace*{0.5cm}
+        \Huge\textbf{Ludika}\\
+        \LARGE\textbf{A Platform for Game-Based Learning Tools Assessment}\\
+
+        \vspace*{1cm}
+
+        \adjincludegraphics[width=0.9\textwidth]{figures/ludika_homepage.png} \\
+        \rule[0.5ex]{\textwidth}{0.5pt}
+
+
+        \vspace*{2cm}
+
+        \begin{minipage}{0.6\textwidth}
+            \begin{flushleft}
+                \Large\noindent{Made by \textbf{Alessandro Modica} \\ Supervising Professor \textbf{Fabrizio Amarilli}}
+            \end{flushleft}
+        \end{minipage}
+        \begin{minipage}{0.35\textwidth}
+            \begin{flushright}
+                \Large\noindent\textbf{Academic Year 2024/2025}
+            \end{flushright}
+        \end{minipage}
+
+    \end{center}
+
+    \vfill
+
+    \begin{minipage}{0.7\textwidth}
+        \begin{minipage}{0.5\textwidth}
+            \centering
+            {\huge Report made with}\vspace{0.3em} {\Huge \LaTeX}
+        \end{minipage}
+    \end{minipage}
+    \begin{minipage}{0.3\textwidth}
+        \flushright
+        \includegraphics[width=\textwidth]{figures/Logo_Politecnico_Milano.png}
+    \end{minipage}
+\end{titlepage}
+
+\tableofcontents
+
+\setlength{\parskip}{0.5em}
+
+\section{Introduction}
+
+Game-Based Learning (GBL) is a pedagogical approach that uses games to enhance the learning experience. It has been shown to improve student engagement, motivation, and retention of knowledge. A significant market at \$US 14.0 billion in 2023\footnote{\href{https://market.us/report/game-based-learning-market/}{Global Game-Based Learning Market Size, Share, Trends Analysis Report By Component (Solution, and Services), By Game Type (AR VR Games, AI-based Games, and Training, Knowledge \& Skill-based games, language learning games, and others), By Deployment Type (On-Premises, and Cloud), By End-User, By Region and Companies - Industry Segment Outlook, Market Assessment, Competition Scenario, Trends and Forecast 2023-2032}}, it is projected to grow significantly in the coming years.
+
+The growing prevalence of online learning and game-based educational tools has led many teachers and institutions to seek ways to determine the effectiveness of these tools in improving student learning outcomes. This project aims to develop a platform to enable a more systematic and data-driven approach to indexing, evaluating and discovering the best game-based learning tools.
+
+
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+                width=0.9\textwidth,
+                height=0.4\textwidth,
+                ybar,
+                bar width=15pt,
+                enlargelimits=0.15,
+                ylabel={Market Size (\$US billion)},
+                xlabel={Year},
+                symbolic x coords={2022,2023,2024,2025,2026,2027,2028,2029,2030,2031,2032},
+                xtick=data,
+                ymin=0,
+                nodes near coords,
+                nodes near coords align={vertical},
+                every node near coord/.append style={font=\small},
+            ]
+            \addplot[fill=violettissimo] coordinates {(2022,11.5) (2023,14.0) (2024,16.6) (2025,21.1) (2026,26.3) (2027,31.3) (2028,35.4) (2029,43.1) (2030,51.2) (2031,62.2) (2032,77.4)};
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Growth of the Game-Based Learning Market, including the projected growth till 2032.}
+\end{figure}
+
+Through a sleek user-friendly web interface, teachers and students alike can easily browse, rank, suggest and review various educational games. The platform also provides a set of metrics to help teachers gauge the effectiveness of these tools in their classrooms given their priorities. Native integration with the API of OpenAI-compatible Large Language Models (LLMs) allows for AI-facilitated categorization and addition of new games, as well as the retrieval of metadata and assets from the web and the generation of summaries, enriching the collection.
+
+Given diverging priorities and needs, teachers greatly benefit from the ability to use Multi-Criteria Decision Making (MCDM) and Weighted Ranking methods to evaluate and compare educational games. The platform allows teachers to create custom evaluation profiles, assign weights to each criterion within a profile, and then rank the games based on their performance against these criteria.
+
+In order to achieve these goals, the project was developed using a \textbf{three-tier architecture} with the API and backend logic contained within a monolithic service, in order to attain the best efficiency and reduce the footprint of service interoperation logic. The platform is built using state-of-the-art web technologies, including Nuxt for the frontend, FastAPI for the backend, and PostgreSQL for the database. LangChain provides the backbone for agentic features, while evaluations are algorithmically generated based on the games' metadata and user reviews. \textbf{Google} and \textbf{Mistral (via NVIDIA NIM)} Large Language Models (LLMs) are used to scan the web for games, and the platform of choice for scraping was \textbf{Reddit}, given the accessible and conversational nature of its content.
+
+The use of Docker allows for easy deployment and management of the various components of the system, and the Cloudflare CDN enables fast and reliable content delivery.
+
+% \section{Related Work---a comparative overview}
+% \todo{add a comparative analysis of the most similar existing platforms, and/or relevant studies that have been conducted in the past.}
+
+\section{Innovation of the proposed solution}
+
+The core value-add of Ludika is the tight integration of all the core components (game discovery, agentic web scraping, a ranking algorithm and the fine-tuned game indexing and scraping systems) into a single platform, and the bespoke agentic functionality it offers. In particular, the ability for teachers to define their own criteria makes using this platform more helpful, relevant and personal than any experience possible using a generic off-the-shelf CMS solution like Wordpress.
+
+To achieve this, the web scraping component of the platform implements a \href{https://en.wikipedia.org/wiki/Multi-agent_system}{Multi-Agent System (MAS)}: the go-to design for complex applications leveraging Large Language Models, it is a system composed of different specialist agents and programmatic tools arranged in a pipeline to fetch, evaluate, index, enrich with metadata and therefore categorize educational games found in organic discussions between users of the popular internet site Reddit or proposed directly by a content moderator. An additional scraper is used to fetch images and other information from the web (Wikipedia, Google and Tavily).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/pdfs/ai_pipeline.pdf}
+    \caption{Agentic Web Scraping Pipeline}
+\end{figure}
+
+With the default criteria provided, teachers are able to compare their own preferences with those of their colleagues. Then, they can create their own sets of weights and see how games stack up against their specific requirements, allowing them to make more informed decisions about which games to use in their classrooms.
+
+This platform is intended to be a living, breathing tool that evolves with the needs of its users. It has a community-driven approach to development, enabling administrators to take in suggestions and feedback from users and extend categorization and evaluation options as needed.
+
+\section{Project Development}
+
+In this section, I will provide an in-depth overview of the development process, including the rationale behind design choices, specifics about the implementation of the platform, as well as the challenges faced and lessons learned along the way.
+
+\subsection{Functionality}
+
+The platform implements a set of core functionalities that allow \textbf{\textit{Users}} to:
+\begin{itemize}
+    \item \textbf{browse and search} for educational games, either by using a search bar or by filtering through a set of predefined tags;
+    \item \textbf{rank} educational games based on a set of criteria, including user reviews and ratings;
+    \item \textbf{evaluate} educational games using a set of custom criteria defined by the user, allowing for a more personalized and relevant experience;
+    \item \textbf{submit} new educational games to the platform as suggestions, allowing moderators to review and approve them;
+    \item \textbf{review} educational games, providing feedback and ratings to help other users make informed decisions;
+\end{itemize}
+
+\noindent Additonally, \textbf{\textit{Content Moderators}} and \textbf{\textit{Platform Administrators}} are able to:
+\begin{itemize}
+    \item \textbf{add} new educational games to the platform, either by using a web form or by using the agentic web scraping feature;
+    \item \textbf{approve} or reject user-submitted educational games, ensuring that only high-quality and relevant content is available on the platform;
+    \item \textbf{manage and monitor} user content and accounts, including the ability to suspend users who disrupt the platform's activities;
+    \item \textbf{automatically scrape} Reddit communities for new educational games, using a set of predefined rules and heuristics to identify relevant posts and fetch additional metadata from the web;
+\end{itemize}
+
+\subsection{Technology Stack}
+The platform is built upon a robust technology stack that includes:
+
+\begin{itemize}
+    \item \textbf{Frontend:} \inlineicon{nuxt.png} \href{https://nuxt.com/}{Nuxt}, a powerful framework for building responsive server-rendered applications with Vue, providing a seamless user experience and fast performance. Presentation layer processing is thus partly offloaded to the server, allowing for faster page loads and improved SEO. Nuxt is built on top of Vue, a popular JavaScript framework for building user interfaces, and provides a powerful set of features for building applications for the modern web.
+    \item \textbf{Backend:} \inlineicon{fastapi.png} \href{https://fastapi.tiangolo.com/}{FastAPI}, a modern web framework for building APIs with Python based on standard Python type hints, first-class citizen support for Pydantic models and an asynchronous runtime conforming to the ASGI standard, ensuring high performance and easy development.
+    \item \textbf{Database:} \inlineicon{postgres.png} \href{https://www.postgresql.org/}{PostgreSQL}, a powerful open-source relational database system that provides reliability and data integrity. Its advanced features, such as support for JSON object storage, full-text search and concurrency synchronization semantics via \textit{advisory locks}, make it an ideal choice for this project.
+    \item \textbf{Containerization:} \inlineicon{docker.png} \href{https://www.docker.com/}{Docker}, allowing for easy deployment and management of the various components of the system. Docker implements the OCI runtime specification, which allows for the use of OCI-compliant container images and runtimes in any environment that supports the OCI standard, such as Kubernetes, OpenShift, Amazon ECS, and Azure Container Instances.
+    \item \textbf{ORM:} \inlineicon{sqlmodel.png} \href{https://sqlmodel.tiangolo.com/}{SQLModel}, a Python library that provides a simple and efficient way to interact with databases using Python objects. It is built on top of SQLAlchemy and Pydantic, providing a powerful and flexible ORM solution for FastAPI applications reducing code repetition and improving maintainability.
+    \item \textbf{Web Scraping:} \inlineicon{bs.png} \href{https://pypi.org/project/beautifulsoup4/}{Beautiful Soup}, a Python library for web scraping that allows for easy extraction of data from HTML and XML documents. It provides a powerful and flexible framework for building web crawlers allowing users to add new games with minimal human intervention.
+    \item \textbf{Reddit Integration:} \inlineicon{praw.png} \href{https://praw.readthedocs.io/en/stable/}{PRAW}, the Python Reddit API Wrapper, which provides a powerful interface for interacting with the Reddit API. It allows for easy integration with Reddit, enabling the platform to fetch and index new educational games from Reddit communities.
+    \item \textbf{CDN:} \inlineicon{cloudflare.png} \href{https://www.cloudflare.com/}{Cloudflare}, providing fast and reliable content delivery through its global network.
+    \item \textbf{LLM Integration:} \inlineicon{langchain.png} \href{https://www.langchain.com/}{LangChain}, enabling the use of compatible Large Language Models for automated categorization and information retrieval.
+\end{itemize}
+
+\subsection{Architecture}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth,trim={2cm 0 2cm 0}]{figures/pdfs/Architecture.pdf}
+    \caption{Architectural Diagram}
+\end{figure}
+
+The architecture of the platform is designed to be modular and horizontally scalable. \textbf{Most of the functionality is delegated to the server, while the client is exclusively responsible for the presentation layer, provided by Nuxt and also partially rendered on the server}.
+
+The system is composed of several key components, each designed to be independently deployable and scalable, allowing for efficient resource utilization and easy maintenance. In the active deployment, all components are hosted on a single node, but it is possible to scale the API server, database and Nuxt SSR independently, thanks to the stateless nature of the API and the use of a relational database as the single source of truth for state. The main components are:
+
+\begin{itemize}
+    \item \textbf{FastAPI Backend}: the core of this project, providing a RESTful API to interact with entities. Also handles authentication and authorization, and executes Agentic routines to scrape and index new educational games from the web.
+    \item \textbf{PostgreSQL Database}: the single record information store for the platform, storing all data except for static assets served directly by NGINX.
+    \item \textbf{Nuxt Frontend}: a single-page application that provides a user-friendly interface for interacting with the platform.
+    \item \textbf{NGINX}: a web server that serves static assets and acts as a reverse proxy for the API and Nuxt applications.
+\end{itemize}
+
+All of these services can be deployed quickly using \textbf{Docker Compose}, which allows for easy management of the various components and their dependencies. The platform is designed to be easily deployable on any cloud provider or on-premises infrastructure.
+
+In addition, the app depends on the following third-party services:
+\begin{itemize}
+    \item \textbf{Cloudflare}: a CDN that provides fast and reliable content delivery, as well as security features such as DDoS protection and SSL termination.
+    \item \textbf{Reddit API}: used to fetch new educational games from Reddit communities, allowing the platform to stay up-to-date with the latest trends in game-based learning.
+    \item \textbf{NVIDIA NIM API}: used to access the Large Language Model (LLM) for agentic web scraping and categorization of educational games.
+    \item \textbf{Tavily and Wikipedia APIs}: used to programmatically search the web.
+    \item \textbf{Google CSE API}: used to retrieve images for educational games.
+\end{itemize}
+
+\subsubsection{Data Model}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/data_model.png}
+    \caption{Data Model}
+\end{figure}
+
+The data model is designed with efficiency and simplicity in mind, using SQL--native constraints and indexes to ensure maximum performance. The following entities and relations are defined:
+
+\begin{itemize}
+    \item \textbf{Users}: Registered accounts, each with a unique UUID, visible name, email, creation and last login timestamps, a user role (\texttt{user}, \texttt{content\_moderator}, or \texttt{platform\_administrator}), enabled status, and password hash. Disabled users are prevented from logging in.
+    \item \textbf{Game}: Educational games proposed by users, with fields for name, description, creation and update timestamps, URL, proposing user, status (\texttt{draft}, \texttt{submitted}, \texttt{approved}, or \texttt{rejected}), and the approving user.
+    \item \textbf{GameImage}: Images associated with each game, identified by game ID and position, storing the image path or reference.
+    \item \textbf{Tag}: Tags that can be assigned to games, each with an ID, name, and optional icon. Tags are used to categorize games and allow for easy filtering and searching.
+    \item \textbf{GameTag}: Association table linking games and tags (many-to-many relationship).
+    \item \textbf{ReviewCriterion}: Criteria used for reviewing games (e.g., ``Ease of use'', ``Fun factor''), each with a unique name and description.
+    \item \textbf{Review}: Reviews of games by users, including review text, creation and update timestamps, and identified by game and reviewer.
+    \item \textbf{ReviewRating}: Ratings for each criterion in a review, storing the score (1--5) for each criterion, game, and reviewer.
+    \item \textbf{CriterionWeightProfile}: Weight profiles defined by users (or admins if global), with a name and a flag indicating if the profile is global.
+    \item \textbf{CriterionWeight}: Weights for each criterion in a weight profile, associating a profile with a criterion and a non-negative weight.
+\end{itemize}
+
+\noindent The project also makes use of the following custom PostgreSQL enum types:
+\begin{itemize}
+    \item \texttt{user\_role}: \{\texttt{user}, \texttt{content\_moderator}, \texttt{platform\_administrator}\}
+    \item \texttt{game\_status}: \{\texttt{draft}, \texttt{submitted}, \texttt{approved}, \texttt{rejected}\}
+\end{itemize}
+
+The \textbf{class diagram} (UML) of the Python data model matches the structure of the database schema, thanks to the use of SQLModel, fully deduplicating model definition across SQL and Python code.
+
+\subsubsection{API Model}
+
+The API, built using FastAPI, uses a RESTful architecture with JSON responses, Bearer authentication and OpenAPI documentation. The following endpoints are available:
+
+\input{./includes/api_schema.tex}
+
+\subsubsection{Authentication \& Authorization}
+\label{sec:auth}
+
+\begin{wrapfigure}{R}{0.5\textwidth}
+    \centering
+    \includegraphics[width=0.45\textwidth]{figures/login_sequence.png}
+    \caption{Login Sequence Diagram}
+\end{wrapfigure}
+
+The authentication system uses JWT, a widely adopted standard that allows for stateless and lightweight authentication without compromising security. OAuth2 bearer tokens are used to authenticate requests, and passwords are securely hashed using the \texttt{Argon2} algorithm, an industry standard.
+
+Authorization is arranged around a simple Role-Based Access Control (RBAC) scheme, with three roles: \texttt{user}, \texttt{content\_moderator} and \texttt{platform\_administrator}. Each role has a different set of permissions, allowing for control over what registered users can do on the platform.
+
+On the client side, an authenticated wrapper of the \texttt{fetch} web API, \texttt{authenticatedFetch}, is used to automatically validate the user's authentication state and access gated endpoits. This wrapper is used throughout the frontend to ensure that all requests are authenticated and that the user has the necessary permissions to access the requested resources.
+
+\subsubsection{Frontend}
+
+The front-end's design reflects on the core principles of Vue, Nuxt and reactive web development: the use of Vue \textit{Composables} to abstract away data and state management from views, the implementation of several reusable and parametrized \textit{Components}---built upon the many fragments available in the \href{https://ui.vuestic.dev/}{Vuestic UI} component library---that appear within pages, and the use of native Nuxt routing mechanisms to organize the structure of the website.
+
+The result is a pleasing--to--use, responsive and modern--looking single-page application, with snappy transitions between routes that feel much more akin to a native experience than most traditional webpages.
+
+
+
+\subsection{Development Process}
+
+% \todo{add a detailed description of the development process once it is underway, as well as screenshots, tools used, BPMN diagrams and other relevant documentation.}
+
+Development of the project was carried out in a linear fashion, with a set of milestones that were completed in the following order.
+
+\subsubsection{API foundation}
+The API was developed first, using PostgreSQL, FastAPI and SQLModel to define the data models and the API endpoints. The goal was to have a solid foundation for the backend, and to be able to test the API using the interactive OpenAPI documentation. Authentication and authorization were implemented using JWT tokens and OAuth2 bearer authentication. \hyperref[sec:auth]{Access control} is implemented in the form of a simple RBAC model and with salted and hashed passwords. Swagger UI allows for easy testing of the API endpoints with examples, an OAuth login form, and docstrings in the code are automatically included in the OpenAPI documentation, making it easy to understand the purpose and usage of each endpoint. Additionally, a simple bespoke Python script was developed to convert the OpenAPI documentation to \LaTeX{} code, for inclusion in this report.
+
+Here's an example of a protected endpoint:
+\begin{lstlisting}[language=Python]
+@game_router.post("/")
+async def create_game(
+    game: GameCreate,
+    db_session: Session = Depends(get_session),
+    current_user: User = Security(get_current_user),
+) -> GamePublic:
+    """Create a new game."""
+    ...
+\end{lstlisting}
+
+The request dependency features of FastAPI make it easy to ensure a consistent and secure flow when accessing an Access Control--enforced endpoint, or one that depends on external resources (e.g. the database). Similarly, Pydantic models and semantic type hints in FastAPI make it easy to ensure that the request body is validated and that no more data than necessary is returned to the client.
+
+Another security dependency, \texttt{Security(get\_current\_user\_optional)} was implemented to allow for optional authentication:
+
+\begin{lstlisting}[language=Python]
+@game_router.get("/{game_id}")
+async def get_game(
+    game_id: int,
+    db_session: Session = Depends(get_session),
+    current_user: User | None = Security(get_current_user_optional),
+) -> GamePublic:
+    """Retrieve a game by its ID."""
+    statement = select(Game).where(Game.id == game_id)
+    if current_user:
+        if not current_user.is_privileged:
+            statement = statement.where(
+                or_(
+                    Game.proposing_user == current_user.uuid,
+                    Game.status == GameStatus.APPROVED.value,
+                )
+            )
+    else:
+        statement = statement.where(Game.status == GameStatus.APPROVED.value)
+    ...
+\end{lstlisting}
+
+Optional authentication is useful for endpoints that are not protected by default but enable additional functionality for users who are authenticated, such as accessing a game that was not approved yet but was proposed by the user themselves. This makes the API more simple to use and more robustly conformant to RESTful design principles, eliminating the need for separate endpoints for authenticated and unauthenticated requests.
+
+\subsubsection{Frontend}
+The frontend was developed using Nuxt, a Node framework for building server-rendered applications with Vue. The goal was to create a responsive, mobile-friendly single-page application that exposes all the functionality implemented in the API.
+
+To that end, open-source components from the Vuestic UI library were used in conjunction with custom components to create a modern and visually appealing UI. Nuxt Images is used for optimized loading of images, and a variety of custom composables handle the interaction with the API.
+
+When the user opens the website, they are immediately presented with a store-like view of the available games, with a search bar and a tag selector to fine-tune the results.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,trim={0 2cm 0 1cm}]{figures/ludika_homepage.png}
+    \caption{Ludika Homepage}
+\end{figure}
+
+Much care went into designing the game detail page, which provides a comprehensive overview of the game along with its metadata and image slideshow, but is also home to the game's reviews and ratings:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,trim={0 1cm 0 1cm}]{figures/game_detail_view.png}
+    \includegraphics[width=0.9\textwidth,trim={0 2cm 0 1cm}]{figures/game_detail_review.png}
+    \caption{Ludika Game Detail Page, showing a user's review}
+\end{figure}
+
+Users must log in to leave a review. Anyone can freely create an account through the registration page, and users get logged in automatically after registration.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,trim={0 1cm 0 1cm}]{figures/login.png}
+    \caption{The sign-in page, which can be accessed from anywhere and automatically opens when the user tries to access a protected route.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,trim={0 1cm 0 1cm}]{figures/edit_review.png}
+    \caption{Users can review games to provide feedback and ratings. Each review can include any number of ratings from the available criteria.}
+\end{figure}
+
+The core feature of this project---comparative game evaluation---is implemented in the \textit{Rank Games} section, accessible from the top bar.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,trim={0 1cm 0 1cm}]{figures/rank_games.png}
+    \caption{\textit{Rank Games} shares its \texttt{GameLibrary} component with the main screen, as well as other views (e.g. the \textit{My Games} screen), with \texttt{prop}-based customization options to adapt it to the specific use case.}
+\end{figure}
+
+Vue props are used extensively throughout the application to pass configuration and data assignments to custom components. This makes it as easy as this to define a new view using the \texttt{GameLibrary} component:
+
+\begin{lstlisting}[language=HTML]
+<template>
+    <div>
+        <GameLibrary title="My Games"
+                     subtitle="Manage your created games"
+                     apiEndpoint="/api/v1/games/my-games"
+                    :showHero="true" :searchable="true"
+                    :tagFilterable="false"
+        />
+    </div>
+</template>
+\end{lstlisting}
+
+Forms are also widely used within the application. Some forms also integrate cards and choice dropdowns to provide a more interactive and intuitive editing of structured items. Such is the case for reviews (as seen above), as well as the editing of custom ranking profiles for games.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,trim={0 1cm 0 1cm}]{figures/rank_profile.png}
+    \caption{The ranking profile editor allows users to create custom profiles with a set of criteria and weights, which can then be used to rank games.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,trim={0 1cm 0 1cm}]{figures/admin_panel.png}
+    \caption{The admin panel provides a comprehensive overview of the system, allowing privileged users to manage users, games, and the scraping facilities.}
+\end{figure}
+
+\pagebreak
+
+\subsubsection{Agentic Web Scraping}
+Agentic Web Scraping is at the heart of two features in Ludika: the \textbf{automated, background scraping of social media/forum communities} (Reddit) for new educational games to add to the platform, and \textbf{the fetching of game metadata and assets from the web} to speed up the onboarding process for new games proposed by content moderators.
+
+\begin{itemize}
+    \item \textbf{Reddit scraping} is implemented using the \texttt{RunnableLambda} paradigm of LangChain, which allows for parallel processing of tasks. In the first stage, posts are fetched from Reddit communities via the site's JSON API, using the PRAW library to programmatically talk to Reddit.
+
+    Then, the posts are processed and filtered to extract metadata, which is fed into the LangChain pipeline for detection of relevant game URLs. This first \textbf{Detection Agent} has access to a \texttt{TavilySearch} tool that uses the Tavily API to gain insights from the web, if needed.
+
+    A simple check is run against the URL to ensure it's not already present in the database, and then URLs are fed into the subsequent stage of the pipeline, where a second \textbf{Metadata Retrieval Agent} finds additional information using the Tavily API, Wikipedia (via a custom \texttt{wikipedia\_search} tool), as well as metadata from the URL's webpage itself.
+
+    This second agent also has access to tools to interact with the database and in particular also selects \texttt{Tag}s to be associated with the new game, as well as checks if the game is present in the DB, in case the previous check did not catch this duplication. A structured response is output from the agent with a special tool, \texttt{create\_game\_with\_fixed\_url}; this is a parametrized tool that is instantiated when setting up the agent's pipeline, ensuring that AI "hallucination" can at least not interfere with the URL provided by the site (or user).
+
+    One final step leverages the power of Google's CSE (Custom Search Engine) API to find images for the game. These are fetched using \textit{Requests}
+    \item \textbf{Metadata retrieval} for user-submitted games essentially uses only the second stage of the pipeline described above, where the user-provided URL is passed to the \texttt{Metadata Retrieval Agent} to fetch additional information about the game. This includes the game's name, description, tags, and images. The agent uses the same tools as before, and the ID of the resulting game is returned to the user, who can immediately view the result of the agentic generation.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth,trim={0 1cm 0 1cm}]{figures/create_with_ai.png}
+    \caption{The UI for creating a new game with AI assistance in Ludika.}
+\end{figure}
+
+\section{Results \& Conclusion}
+
+The final design attempts to blend user-friendly interfaces with effective API design and a wholly robust and maintainable package. The user interface is designed to work on both desktop and mobile devices with any screen size, and the API is built to be easy to extend and to have minimum attack surface in terms of security concerns.
+
+Development took place over the course of a few months in the 2nd semester of Academic Year 2024/2025, with the first few weeks dedicated to researching technology, planning out the architecture and data model design, reading documentation and experimenting with the various components of the stack.
+
+\subsection{Challenges with the implementation \& original value additions}
+
+Several challenges were encountered during the implementation of the Ludika platform. One of the primary aims was ensuring seamless integration between the various components of the stack, particularly the interaction between the FastAPI backend and the Nuxt frontend. This required careful planning and design of the endpoints, the establishment and following of several conventions for data formats and methods (visible in the \href{https://ludika.modica.io}{official API Documentation}), and the creation of useful wrappers on the client--side to minimize the chances of diverging behaviors in different parts of the app.
+
+Another challenging aspect was the implementation of the agentic feature set, which involved creating a system that could intelligently respond to input data and make decisions based on the context of operation. This required extensive testing and tweaking of the prompts and representation formats used to talk with the LLMs, as well as fine-tuning the detection algorithms and tooling to reduce unintended behavior. One key aspect of this was parametrizing and delegating as much of the orchestration/decision--making process as possible to deterministic logic. For instance, the initialization of the agent pipeline takes advantage of Python's functional programming elegance and thread synchronization features to create a pipeline with forward--passing of context and safe concurrent access to observability metrics:
+
+\begin{lstlisting}[language=Python]
+def pipeline_factory(self):
+    """Create a pipeline for processing Reddit posts"""
+    def detect_and_process(post: RedditPost):
+        raw_detection = game_detection_executor.invoke(
+            {"post_content": f"{post.title}"
+                             f"{'\n\n' + post.url if post.url else ''}\n\n"
+                             f"{post.selftext}"
+            }
+        )
+
+        detection = DetectionResult(**json.loads(raw_detection["output"]))
+        self._posts_processed_counter.increment()
+
+        if detection.has_game_url and detection.url:
+            self._games_found_counter.increment()
+            get_logger().info(f"Found game URL: {detection.url}"
+                              f" for post: {post.title}")
+            with db_context() as db_session:
+                if db_session.exec(
+                    select(Game)
+                    .where(Game.url == detection.url)
+                ).first():
+                    return {
+                        "skipped": True,
+                        "reason": "Game already exists",
+                        "post_title": post.title
+                    }
+            executor = create_agent_executor_for_game_create(
+                detection.url,
+                game_added_callback=lambda:
+                    self._games_added_counter.increment()
+            )
+            return executor.invoke({})
+
+        return {
+            "skipped": True,
+            "reason": "No game URL detected",
+            "post_title": post.title
+        }
+
+    def complete_pipeline():
+        self._posts = get_top_posts()
+        self._posts_found = len(self._posts)
+        RunnableLambda(detect_and_process).batch(self._posts)
+
+    return complete_pipeline
+\end{lstlisting}
+
+
+The final implementation of the AI controller, while not entirely free from issues stemming from LLM non--determinism (which require some degree of human oversight to vet data as it is imported), is robust enough to have been used to populate the majority of the entries on the platform.
+
+The project has the potential to significantly enhance the user experience for teachers and students by providing a more interactive and engaging platform for discovering and evaluating educational games than existing websites within its niche. The community--based approach to growing its library and the use of AI to streamline the game creation process is a key differentiator for Ludika, allowing the platform to grow organically while also gaining insight into new titles within the Game--Based Learning (GBL) space from online activity with no direct human intervention.
+
+\subsubsection{Demo \& Links}
+\begin{itemize}
+\item \inlineicon{ludika.png} \href{https://ludika.modica.io}{ludika.modica.io}: the live platform
+\item \inlineicon{fastapi.png} \href{https://ludika.modica.io/api/v1/docs}{Live API Documentation}: the OpenAPI documentation for the API, which can be used to interact with the platform programmatically.
+\item \inlineicon{github.png} \href{https://github.com/TheManchineel/ludika}{TheManchineel/ludika}: the source code for the project, available on GitHub.
+\end{itemize}
+
+\pagebreak
+\section{Bibliography}
+
+\subsection{Reference Documentation}
+\begin{itemize}
+    \item \href{https://www.postgresql.org/docs/current/}{PostgreSQL Official Documentation}: reference for the database system, including schema configuration, data types and advanced query features.
+    \item \href{https://nuxt.com/docs/getting-started/introduction}{Nuxt Documentation}: reference for the frontend framework, including routing, state management and server-side rendering.
+    \item \href{https://fastapi.tiangolo.com/tutorial/}{FastAPI Documentation}: used as reference for building the API, developing authentication and authorization, and implementing the database models.
+    \item \href{https://langchain.com/docs/get_started/introduction.html}{LangChain Documentation}: reference for the integration of OpenAI-compatible Large Language Models, including the use of agents, callables, chains and document retrievers.
+    \item \href{https://www.crummy.com/software/BeautifulSoup/bs4/doc/}{BeautifulSoup Documentation}: reference for the web document parsing library, used to fetch and index new educational games.
+    \item \href{https://sqlmodel.tiangolo.com/}{SQLModel Documentation}: reference for the ORM library, used to interact with the database and define the data models.
+\end{itemize}
+
+\subsection{Articles \& Whitepapers}
+\begin{itemize}
+    \item \href{https://analysisfunction.civilservice.gov.uk/policy-store/an-introductory-guide-to-mcda/}{An Introductory Guide to Multi-Criteria Decision Analysis (MCDA)}: a comprehensive overview of the MCDA methodology, including its principles, applications and limitations.
+    \item \href{https://www.sciencedirect.com/science/article/pii/S0957417416306698}{Accurate multi-criteria decision making methodology for recommending machine learning algorithm}: a research paper that discusses the use of MCDA for recommending machine learning algorithms, providing insights into the methodology and its applications.
+\end{itemize}
+
+\subsection{Other Projects and Resources}
+\begin{itemize}
+    \item \href{https://github.com/TutorFx/nuxtjs-fastapi}{Nuxt.js FastAPI Starter}: a boilerplate project that provides a starting point for building applications using Nuxt.js and FastAPI.
+    \item \href{https://www.azepug.az/posts/fastapi/#building-simple-e-commerce-with-nuxtjs-and-fastapi-series}{Building a simple e-commerce with Nuxt.js and FastAPI -- Azerbaijan Python User Group}: a series of articles that involve the creation of a project similar in scale and complexity to this one, providing a good reference for the development process of a Nuxt.js/FastAPI application.
+\end{itemize}
+
+\end{document}
